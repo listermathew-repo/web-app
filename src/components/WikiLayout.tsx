@@ -10,6 +10,7 @@ const navItems = [
   { label: "Prop Firm Plan", href: "/ftmo",      icon: "◈", description: "Shadow tracker & multi-account strategy" },
   { label: "Psychology",     href: "/psychology",icon: "◉", description: "Mental state & session logs" },
   { label: "Goals",          href: "/goals",     icon: "◇", description: "90-day targets & achievements" },
+  { label: "Aristotle",      href: "/aristotle", icon: "◆", description: "First principles deconstructor" },
   { label: "Commands",       href: "/commands",  icon: "⌘", description: "What to type — every action" },
 ];
 
