@@ -54,12 +54,12 @@ const commandGroups = [
       {
         trigger: "am I within hard stops?",
         what: "Daily DD check",
-        detail: "Checks your stated daily P&L against the $1,600 personal limit and $4,000 FTMO hard stop.",
+        detail: "Checks your stated daily P&L against the $1,600 personal limit and $4,000 Prop Firm hard stop.",
         example: "am I within hard stops? down $600 today",
       },
       {
         trigger: "update shadow tracker [P&L]",
-        what: "FTMO shadow log",
+        what: "Prop Firm shadow log",
         detail: "Takes your real P&L, multiplies by 1.25, and tells you the updated shadow balance and status.",
         example: "update shadow tracker real P&L +$420",
       },
@@ -87,7 +87,7 @@ const commandGroups = [
         trigger: "council this: [question]",
         what: "5-advisor LLM council",
         detail: "Convenes 5 advisors (Contrarian, First Principles, Expansionist, Outsider, Executor) + peer review + chairman verdict. Use Opus model for this.",
-        example: "council this: should I apply for FTMO now or wait 30 more days?",
+        example: "council this: should I apply for Prop Firm now or wait 30 more days?",
       },
       {
         trigger: "steelman [decision]",
@@ -168,12 +168,12 @@ const commandGroups = [
       {
         trigger: "weekly review",
         what: "Sunday performance review",
-        detail: "Walks through the weekly review checklist: P&L, process scores, psych trend, FTMO shadow status, next week prep. Use Opus model.",
+        detail: "Walks through the weekly review checklist: P&L, process scores, psych trend, Prop Firm shadow status, next week prep. Use Opus model.",
         example: "weekly review",
       },
       {
         trigger: "update shadow tracker: real P&L $[x]",
-        what: "FTMO log",
+        what: "Prop Firm log",
         detail: "Computes shadow P&L (×1.25), updates running balance, flags if approaching soft or hard stops.",
         example: "update shadow tracker: real P&L $380",
       },

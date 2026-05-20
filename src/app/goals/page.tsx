@@ -2,18 +2,18 @@ import WikiLayout from "@/components/WikiLayout";
 
 const goals = [
   { category: "Process mastery", items: ["Complete entry checklist 100% of sessions", "Process score 6+/7 on 80%+ of sessions", "Zero breaks of the 2-loss rule", "Zero revenge trades logged"] },
-  { category: "FTMO shadow challenge", items: ["Shadow P&L reaches +$10,000 within 90 trading days", "No single session loses more than $5,000 shadow", "Max drawdown stays below $10,000 at all times", "Minimum 4 different trading sessions"] },
+  { category: "Prop Firm shadow challenge", items: ["Shadow P&L reaches +$10,000 within 90 trading days", "No single session loses more than $5,000 shadow", "Max drawdown stays below $10,000 at all times", "Minimum 4 different trading sessions"] },
   { category: "System refinement", items: ["Identify best GOLD entry window (backtest vs live)", "Map FVG targets for AUDUSD and EURUSD", "Complete iFVG Phase 1 — exit precision for 90 sessions", "Evaluate iFVG Phase 2 entry trigger at 90-day review"] },
   { category: "Capital growth", items: ["No net drawdown below $76,000 (5% buffer)", "Achieve +$8,000 real P&L over 90 days", "Scale to T3 after 20 consecutive process scores ≥6/7"] },
 ];
 
 const milestones = [
-  { date: "Apr 21, 2026",   label: "Shadow challenge starts",           status: "active",  note: "FTMO $100k mirror begins. Scale factor 1.25×." },
-  { date: "Day 4 traded",   label: "FTMO minimum days met",             status: "pending", note: "4 trading days = FTMO minimum. Process scores logged." },
+  { date: "Apr 21, 2026",   label: "Shadow challenge starts",           status: "active",  note: "Prop Firm $100k mirror begins. Scale factor 1.25×." },
+  { date: "Day 4 traded",   label: "Prop Firm minimum days met",             status: "pending", note: "4 trading days = Prop Firm minimum. Process scores logged." },
   { date: "30 days traded", label: "First monthly review",              status: "pending", note: "Review process scores, psychology trend, P&L per tier." },
   { date: "60 days traded", label: "Midpoint checkpoint",               status: "pending", note: "Shadow on pace? Refine any rules. NAS100 research review." },
-  { date: "90 days traded", label: "Shadow challenge complete",         status: "pending", note: "Review all 6 pass criteria. Green light = schedule real FTMO." },
-  { date: "Post-90",        label: "Real FTMO $100k Swing attempt",     status: "future",  note: "€540 one-time fee, refunded with first payout." },
+  { date: "90 days traded", label: "Shadow challenge complete",         status: "pending", note: "Review all 6 pass criteria. Green light = schedule real Prop Firm." },
+  { date: "Post-90",        label: "Real Prop Firm $100k Swing attempt",     status: "future",  note: "€540 one-time fee, refunded with first payout." },
   { date: "Post-funded",    label: "Begin daisy-chain Phase 2/3",       status: "future",  note: "Challenge 2 at reduced risk. Split lots across both accounts." },
 ];
 
@@ -22,7 +22,7 @@ const agenda = [
   { p: "HIGH", item: "FIRM — Full agent roster JSON + company name shortlist",          area: "Structure" },
   { p: "HIGH", item: "FIRM — NotebookLM: Quant notebook + Wendy notebook",             area: "Structure" },
   { p: "MED",  item: "FIRM — Map MAF criteria against 4-condition entry system",       area: "System" },
-  { p: "MED",  item: "NAS100 research after FTMO path locked in",                      area: "Research" },
+  { p: "MED",  item: "NAS100 research after Prop Firm path locked in",                      area: "Research" },
   { p: "MED",  item: "ASX small caps — backtesting research",                          area: "Research" },
   { p: "LOW",  item: "Obsidian setup — defer to 6-month review",                       area: "Tools" },
   { p: "LOW",  item: "iFVG Phase 2 entry trigger — evaluate at 90-day mark",           area: "System" },
@@ -40,7 +40,7 @@ export default function GoalsPage() {
       {/* Drucker */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
         <p className="text-sm text-slate-700 leading-relaxed">&ldquo;What gets measured gets managed.&rdquo; — Peter Drucker</p>
-        <p className="text-xs text-slate-400 mt-2">Every session logged = evidence. Evidence = confidence. Confidence = real FTMO capital.</p>
+        <p className="text-xs text-slate-400 mt-2">Every session logged = evidence. Evidence = confidence. Confidence = real Prop Firm capital.</p>
       </div>
 
       {/* 90-day goals */}

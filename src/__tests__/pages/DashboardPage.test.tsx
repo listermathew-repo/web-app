@@ -36,8 +36,8 @@ describe('DashboardPage Component', () => {
 
     expect(screen.getByText('Account balance')).toBeInTheDocument();
     expect(screen.getByText('Daily loss limit')).toBeInTheDocument();
-    expect(screen.getByText('FTMO daily hard stop')).toBeInTheDocument();
-    expect(screen.getByText('FTMO max drawdown')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm daily hard stop')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm max drawdown')).toBeInTheDocument();
   });
 
   it('displays correct quick stats values', () => {
@@ -58,7 +58,7 @@ describe('DashboardPage Component', () => {
     expect(screen.getByText(/Wednesday check/)).toBeInTheDocument();
     expect(screen.getByText(/15:00 check — run signal check/)).toBeInTheDocument();
     expect(screen.getByText(/Post-session log/)).toBeInTheDocument();
-    expect(screen.getByText(/Update FTMO shadow tracker/)).toBeInTheDocument();
+    expect(screen.getByText(/Update Prop Firm shadow tracker/)).toBeInTheDocument();
   });
 
   it('displays non-negotiable rules section', () => {
@@ -98,14 +98,14 @@ describe('DashboardPage Component', () => {
     expect(screen.getByText(/One missing = no trade/)).toBeInTheDocument();
   });
 
-  it('displays FTMO shadow tracker section', () => {
+  it('displays Prop Firm shadow tracker section', () => {
     render(<DashboardPage />);
 
-    expect(screen.getByText('FTMO Shadow Tracker')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm Shadow Tracker')).toBeInTheDocument();
     expect(screen.getByText(/IN PROGRESS/)).toBeInTheDocument();
   });
 
-  it('displays FTMO shadow tracker stats', () => {
+  it('displays Prop Firm shadow tracker stats', () => {
     render(<DashboardPage />);
 
     expect(screen.getByText('Shadow P&L')).toBeInTheDocument();
@@ -113,7 +113,7 @@ describe('DashboardPage Component', () => {
     expect(screen.getByText('Days Traded')).toBeInTheDocument();
   });
 
-  it('displays FTMO scale factor explanation', () => {
+  it('displays Prop Firm scale factor explanation', () => {
     render(<DashboardPage />);
 
     expect(screen.getByText(/Scale factor:/)).toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />);
 
     expect(screen.getByText('Trading Rules')).toBeInTheDocument();
-    expect(screen.getByText('FTMO Plan')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm Plan')).toBeInTheDocument();
     expect(screen.getByText('Psychology')).toBeInTheDocument();
     expect(screen.getByText('Goals')).toBeInTheDocument();
   });
@@ -169,13 +169,13 @@ describe('DashboardPage Component', () => {
     expect(screen.getByText('2% personal stop')).toBeInTheDocument();
   });
 
-  it('displays FTMO limits sub-text', () => {
+  it('displays Prop Firm limits sub-text', () => {
     render(<DashboardPage />);
     expect(screen.getByText('5% — terminal halt')).toBeInTheDocument();
     expect(screen.getByText('10% — challenge over')).toBeInTheDocument();
   });
 
-  it('displays FTMO target and limit', () => {
+  it('displays Prop Firm target and limit', () => {
     render(<DashboardPage />);
     expect(screen.getByText('of $10,000 target')).toBeInTheDocument();
     expect(screen.getByText('limit: $10,000')).toBeInTheDocument();

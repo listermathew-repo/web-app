@@ -2,7 +2,7 @@ import WikiLayout from "@/components/WikiLayout";
 
 const propFirmRanking = [
   {
-    rank: 1, firm: "FTMO", account: "$100k Swing", cost: "€540",
+    rank: 1, firm: "Prop Firm", account: "$100k Swing", cost: "€540",
     profitTarget: "10% ($10,000)", dailyDD: "5% ($5,000)", maxDD: "10% ($10,000)", split: "80% → 90%",
     notes: "Exact instruments: XAUUSD, AUDUSD, EURUSD. No overnight/news restrictions on Swing. Fee refunded with first payout.",
     status: "DAY 1", statusColor: "text-amber-700 bg-amber-50 border-amber-200",
@@ -23,10 +23,10 @@ const propFirmRanking = [
 
 const hardStops = [
   { label: "Personal daily limit",   real: "$1,600", shadow: "$2,000",  action: "Stop. Platform closes. No re-entry today.",      type: "personal" },
-  { label: "FTMO soft daily buffer", real: "$3,200", shadow: "$4,000",  action: "Reduce to T1 only. High alert.",                 type: "soft" },
-  { label: "FTMO 5% daily DD",       real: "$4,000", shadow: "$5,000",  action: "TERMINAL HALT. No new entries until next ACST session.", type: "hard" },
-  { label: "FTMO soft max buffer",   real: "$7,200", shadow: "$9,000",  action: "T1 only. Review session. Stop if stressed.",      type: "soft" },
-  { label: "FTMO 10% max DD",        real: "$8,000", shadow: "$10,000", action: "CHALLENGE OVER. Liquidate all positions. 48-hr review.", type: "hard" },
+  { label: "Prop Firm soft daily buffer", real: "$3,200", shadow: "$4,000",  action: "Reduce to T1 only. High alert.",                 type: "soft" },
+  { label: "Prop Firm 5% daily DD",       real: "$4,000", shadow: "$5,000",  action: "TERMINAL HALT. No new entries until next ACST session.", type: "hard" },
+  { label: "Prop Firm soft max buffer",   real: "$7,200", shadow: "$9,000",  action: "T1 only. Review session. Stop if stressed.",      type: "soft" },
+  { label: "Prop Firm 10% max DD",        real: "$8,000", shadow: "$10,000", action: "CHALLENGE OVER. Liquidate all positions. 48-hr review.", type: "hard" },
 ];
 
 const passCriteria = [
@@ -50,12 +50,12 @@ export default function FtmoPage() {
       {/* Shadow Tracker */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">FTMO Shadow Challenge</h2>
+          <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">Prop Firm Shadow Challenge</h2>
           <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded px-2 py-0.5">⏳ IN PROGRESS</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           {[
-            { label: "Starting balance", value: "$100,000", sub: "Simulated FTMO" },
+            { label: "Starting balance", value: "$100,000", sub: "Simulated Prop Firm" },
             { label: "Profit target",    value: "$10,000",  sub: "10% — Phase 1 pass" },
             { label: "Daily DD limit",   value: "$5,000",   sub: "5% shadow max" },
             { label: "Max drawdown",     value: "$10,000",  sub: "10% = challenge over" },
@@ -94,7 +94,7 @@ export default function FtmoPage() {
             </div>
             <div className="space-y-1.5 text-xs border-t border-slate-200 pt-3">
               <div className="flex justify-between"><span className="text-slate-500">Real account</span><span className="font-mono font-bold text-slate-700">$80,000</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">FTMO equivalent</span><span className="font-mono font-bold text-slate-700">$100,000</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Prop Firm equivalent</span><span className="font-mono font-bold text-slate-700">$100,000</span></div>
               <div className="flex justify-between pt-1 border-t border-slate-200">
                 <span className="text-slate-500">Example: Real +$400</span>
                 <span className="text-emerald-600 font-mono font-bold">Shadow +$500</span>
@@ -116,7 +116,7 @@ export default function FtmoPage() {
 
       {/* Hard Stops */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4">Hard Stops — FTMO Protection</h2>
+        <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4">Hard Stops — Prop Firm Protection</h2>
         <div className="space-y-2">
           {hardStops.map((stop) => (
             <div key={stop.label} className={`flex items-start gap-4 p-4 rounded-lg border
@@ -153,7 +153,7 @@ export default function FtmoPage() {
         {/* Core philosophy */}
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-5">
           <p className="text-sm text-slate-700 leading-relaxed">
-            <span className="text-emerald-700 font-semibold">The principle:</span> Rather than risk a full lot on one account, run two accounts at half risk each. Neither account individually faces the same drawdown exposure — FTMO evaluates each separately. If one session goes wrong, it can only hurt one account, not both.
+            <span className="text-emerald-700 font-semibold">The principle:</span> Rather than risk a full lot on one account, run two accounts at half risk each. Neither account individually faces the same drawdown exposure — Prop Firm evaluates each separately. If one session goes wrong, it can only hurt one account, not both.
           </p>
         </div>
 
@@ -257,7 +257,7 @@ export default function FtmoPage() {
             <p className="text-xs font-semibold text-emerald-700 mb-2">✓ Advantages</p>
             <ul className="space-y-1 text-xs text-slate-600">
               <li>– Each account individually harder to blow</li>
-              <li>– FTMO evaluates accounts separately</li>
+              <li>– Prop Firm evaluates accounts separately</li>
               <li>– Psychological: less fear per individual account</li>
               <li>– A bad session can only damage one account</li>
               <li>– Scales profit split over time (80% × 2 accounts)</li>
@@ -279,7 +279,7 @@ export default function FtmoPage() {
       {/* Pass Criteria */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-1">Pass Criteria Checklist</h2>
-        <p className="text-xs text-slate-400 mb-4">Review after 90 trading days. All 6 must be checked before attempting the real FTMO challenge.</p>
+        <p className="text-xs text-slate-400 mb-4">Review after 90 trading days. All 6 must be checked before attempting the real Prop Firm challenge.</p>
         <div className="space-y-0">
           {passCriteria.map((c, i) => (
             <div key={i} className="flex items-start gap-3 py-2.5 border-b border-slate-100 last:border-0">
@@ -290,7 +290,7 @@ export default function FtmoPage() {
         </div>
         <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
           <p className="text-xs text-slate-600">
-            <span className="text-emerald-700 font-semibold">Green light:</span> All 6 checked → schedule the real FTMO $100k Swing (~€540, refunded with first payout).
+            <span className="text-emerald-700 font-semibold">Green light:</span> All 6 checked → schedule the real Prop Firm $100k Swing (~€540, refunded with first payout).
           </p>
         </div>
       </div>
@@ -323,8 +323,8 @@ export default function FtmoPage() {
         </div>
         <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-2">
           <p className="font-semibold text-slate-600 uppercase tracking-wider text-[10px]">Decision Framework</p>
-          <div className="flex items-start gap-2"><span className="text-amber-600 font-bold flex-shrink-0">Day 1:</span><span className="text-slate-500">FTMO Swing $100k. Shadow challenge passes consistently → apply. Run at reduced risk (Phase 1).</span></div>
-          <div className="flex items-start gap-2"><span className="text-blue-600 font-bold flex-shrink-0">Day 2:</span><span className="text-slate-500">FundedNext Futures $50k. After FTMO funded, or parallel to build daisy-chain.</span></div>
+          <div className="flex items-start gap-2"><span className="text-amber-600 font-bold flex-shrink-0">Day 1:</span><span className="text-slate-500">Prop Firm Swing $100k. Shadow challenge passes consistently → apply. Run at reduced risk (Phase 1).</span></div>
+          <div className="flex items-start gap-2"><span className="text-blue-600 font-bold flex-shrink-0">Day 2:</span><span className="text-slate-500">FundedNext Futures $50k. After Prop Firm funded, or parallel to build daisy-chain.</span></div>
         </div>
       </div>
     </WikiLayout>

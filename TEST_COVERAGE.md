@@ -86,22 +86,22 @@
 
 #### DashboardPage.test.tsx ✅ **NEW**
 - **Tests**: 26
-- **Coverage**: Daily agenda, quick stats, FTMO tracker, trading rules, conditions
+- **Coverage**: Daily agenda, quick stats, Prop Firm tracker, trading rules, conditions
 - **Location**: `src/__tests__/pages/DashboardPage.test.tsx`
 
 **Tests**:
 - Page rendering within WikiLayout
 - Page title with current date
-- Quick stats section (account balance, daily loss limit, FTMO limits)
+- Quick stats section (account balance, daily loss limit, Prop Firm limits)
 - Daily agenda checklist items (7 items)
 - Non-negotiable rules display
 - 5-condition entry gate (C1-C5)
 - Entry gate details and descriptions
 - Entry gate warning about all 5 conditions required
-- FTMO shadow tracker section
-- FTMO stats display
-- FTMO scale factor explanation
-- Quick links section (Trading Rules, FTMO Plan, Psychology, Goals)
+- Prop Firm shadow tracker section
+- Prop Firm stats display
+- Prop Firm scale factor explanation
+- Quick links section (Trading Rules, Prop Firm Plan, Psychology, Goals)
 - Quick links href validation
 - Daily agenda header with instruction
 - Numbered checklist rendering
@@ -138,8 +138,8 @@
 
 - **Risk Rules (7 tests)**:
   - Personal daily limit
-  - FTMO daily hard stop
-  - FTMO max drawdown
+  - Prop Firm daily hard stop
+  - Prop Firm max drawdown
   - 2-loss rule
   - BE rule
   - Exit discipline
@@ -243,7 +243,7 @@ npm run test:ui
 |------|-------|--------|-----------|
 | WikiLayout (Component) | 6 | ✅ | Rendering, navigation, children |
 | Navbar (Component) | 20 | ✅ | Links, styling, interactions |
-| Dashboard | 26 | ✅ | Daily agenda, stats, FTMO |
+| Dashboard | 26 | ✅ | Daily agenda, stats, Prop Firm |
 | Rules | 47 | ✅ | MAF, tiers, conditions, risk |
 | Psychology | 33 | ✅ | Scores, log, traps, models |
 | Aristotle | 11 | ✅ | Prompt, phases, framework |
@@ -412,7 +412,7 @@ vi.mock('@/components/WikiLayout', () => ({
    - Screen reader testing
 
 4. **Increase Coverage**
-   - FTMO page
+   - Prop Firm page
    - Goals page
    - Commands page
    - Trading System page
