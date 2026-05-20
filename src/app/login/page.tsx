@@ -45,10 +45,11 @@ export default function LoginPage() {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">
+            <label htmlFor="password" className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">
               Access code
             </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
