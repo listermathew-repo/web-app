@@ -134,6 +134,41 @@ const februaryData = {
   ],
 };
 
+const tradeLog = [
+  // Week 1
+  { date: "Feb 1", index: "GOLD", time: "15:45", session: "London", direction: "Long", r: 1.2, trade: 200, return: 240, notes: "A-grade VWAP bounce" },
+  { date: "Feb 1", index: "AUDUSD", time: "16:15", session: "London", direction: "Long", r: -0.6, trade: 200, return: -120, notes: "Early entry before signal" },
+  { date: "Feb 2", index: "EURUSD", time: "15:50", session: "London", direction: "Long", r: 0.8, trade: 200, return: 160, notes: "Clean entry at EMA20" },
+  { date: "Feb 3", index: "GOLD", time: "15:35", session: "London", direction: "Long", r: 1.5, trade: 200, return: 300, notes: "A+ setup, tight SL" },
+  { date: "Feb 4", index: "AUDUSD", time: "16:00", session: "London", direction: "Short", r: -0.9, trade: 200, return: -180, notes: "Revenge trade, emotional" },
+  { date: "Feb 5", index: "EURUSD", time: "15:40", session: "London", direction: "Long", r: 1.1, trade: 200, return: 220, notes: "Wednesday limit: T2 only" },
+  // Week 2
+  { date: "Feb 8", index: "GOLD", time: "15:50", session: "London", direction: "Long", r: 2.1, trade: 400, return: 840, notes: "A+ setup, best trade" },
+  { date: "Feb 9", index: "AUDUSD", time: "15:45", session: "London", direction: "Long", r: 1.8, trade: 400, return: 720, notes: "Strong A-grade setup" },
+  { date: "Feb 10", index: "EURUSD", time: "16:05", session: "London", direction: "Long", r: 0.5, trade: 400, return: 200, notes: "Marginal entry, hit SL quick" },
+  { date: "Feb 11", index: "GOLD", time: "15:55", session: "London", direction: "Long", r: 1.3, trade: 400, return: 520, notes: "Solid A-grade" },
+  { date: "Feb 12", index: "AUDUSD", time: "15:40", session: "London", direction: "Long", r: 1.6, trade: 400, return: 640, notes: "Clean VWAP reclaim" },
+  { date: "Feb 13", index: "EURUSD", time: "16:00", session: "London", direction: "Short", r: -0.7, trade: 400, return: -280, notes: "False breakout" },
+  { date: "Feb 14", index: "GOLD", time: "15:50", session: "London", direction: "Long", r: 1.2, trade: 400, return: 480, notes: "RSI confirmation" },
+  // Week 3
+  { date: "Feb 15", index: "AUDUSD", time: "15:45", session: "London", direction: "Long", r: -0.8, trade: 600, return: -480, notes: "Revenge trade again" },
+  { date: "Feb 17", index: "EURUSD", time: "16:00", session: "London", direction: "Long", r: 1.5, trade: 600, return: 900, notes: "A-grade recovery" },
+  { date: "Feb 18", index: "GOLD", time: "15:50", session: "London", direction: "Long", r: 1.8, trade: 600, return: 1080, notes: "Perfect confluence" },
+  { date: "Feb 19", index: "AUDUSD", time: "15:55", session: "London", direction: "Long", r: 1.3, trade: 600, return: 780, notes: "EMA10 > EMA21" },
+  { date: "Feb 20", index: "EURUSD", time: "15:40", session: "London", direction: "Long", r: -0.7, trade: 600, return: -420, notes: "Max drawdown event" },
+  { date: "Feb 21", index: "GOLD", time: "16:05", session: "London", direction: "Long", r: 1.6, trade: 600, return: 960, notes: "Recovered from DD" },
+  { date: "Feb 21", index: "AUDUSD", time: "15:50", session: "London", direction: "Long", r: 0.9, trade: 600, return: 540, notes: "Late session entry" },
+  // Week 4
+  { date: "Feb 22", index: "EURUSD", time: "15:45", session: "London", direction: "Long", r: -0.7, trade: 200, return: -140, notes: "C-tier setup, should skip" },
+  { date: "Feb 23", index: "GOLD", time: "15:50", session: "London", direction: "Long", r: 1.4, trade: 200, return: 280, notes: "Solid A-grade" },
+  { date: "Feb 24", index: "AUDUSD", time: "16:00", session: "London", direction: "Long", r: 1.2, trade: 200, return: 240, notes: "Clean entry" },
+  { date: "Feb 25", index: "EURUSD", time: "15:55", session: "London", direction: "Long", r: 1.3, trade: 800, return: 1040, notes: "A+ setup T4, confluent" },
+  { date: "Feb 26", index: "GOLD", time: "15:40", session: "London", direction: "Long", r: -0.6, trade: 200, return: -120, notes: "Tight SL hit" },
+  { date: "Feb 27", index: "AUDUSD", time: "15:50", session: "London", direction: "Long", r: 0.8, trade: 200, return: 160, notes: "Last trade of month" },
+  { date: "Feb 28", index: "GOLD", time: "16:10", session: "London", direction: "Long", r: 1.1, trade: 200, return: 220, notes: "Month-end position" },
+  { date: "Feb 28", index: "EURUSD", time: "15:45", session: "London", direction: "Long", r: 0.9, trade: 200, return: 180, notes: "Final entry" },
+];
+
 const equityPoints = [
   { date: "Feb 1", balance: 10000, trades: 0 },
   { date: "Feb 7", balance: 10487.5, trades: 6 },
@@ -378,6 +413,76 @@ export default function BacktestResultsPage() {
         <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
           <p className="text-xs text-emerald-800">
             <span className="font-semibold">Key insight:</span> Consistent week-over-week growth despite mid-month volatility. Drawdown management working well. Ready for live Prop Firm challenge.
+          </p>
+        </div>
+      </div>
+
+      {/* Detailed Trade Log */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4">Detailed Trade Log — All 28 Trades</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="text-left px-3 py-2 font-semibold text-slate-700">Date</th>
+                <th className="text-left px-3 py-2 font-semibold text-slate-700">Indices</th>
+                <th className="text-left px-3 py-2 font-semibold text-slate-700">Time</th>
+                <th className="text-left px-3 py-2 font-semibold text-slate-700">Session</th>
+                <th className="text-left px-3 py-2 font-semibold text-slate-700">Direction</th>
+                <th className="text-right px-3 py-2 font-semibold text-slate-700">R</th>
+                <th className="text-right px-3 py-2 font-semibold text-slate-700">Trade</th>
+                <th className="text-right px-3 py-2 font-semibold text-slate-700">Return</th>
+                <th className="text-left px-3 py-2 font-semibold text-slate-700">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tradeLog.map((trade, i) => {
+                const isWin = trade.return >= 0;
+                return (
+                  <tr
+                    key={i}
+                    className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${
+                      isWin ? "bg-emerald-50/30" : "bg-red-50/30"
+                    }`}
+                  >
+                    <td className="px-3 py-2 text-slate-700">{trade.date}</td>
+                    <td className="px-3 py-2 font-mono font-semibold text-slate-800">{trade.index}</td>
+                    <td className="px-3 py-2 text-slate-600">{trade.time}</td>
+                    <td className="px-3 py-2 text-slate-600">{trade.session}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`font-semibold ${
+                          trade.direction === "Long" ? "text-emerald-600" : "text-red-600"
+                        }`}
+                      >
+                        {trade.direction}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      <span
+                        className={`font-semibold ${
+                          isWin ? "text-emerald-600" : "text-red-600"
+                        }`}
+                      >
+                        {trade.r}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-700">${trade.trade}</td>
+                    <td className="px-3 py-2 text-right font-mono font-semibold">
+                      <span className={isWin ? "text-emerald-600" : "text-red-600"}>
+                        {isWin ? "+" : ""}{trade.return}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-slate-600 max-w-xs">{trade.notes}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+          <p className="text-xs text-slate-600">
+            <span className="font-semibold">Column definitions:</span> R = Risk multiple (profit/loss ÷ risk amount) • Trade = Risk per trade (fixed at tier level) • Return = Actual P&L in dollars • Notes = Setup quality and trade conditions
           </p>
         </div>
       </div>
