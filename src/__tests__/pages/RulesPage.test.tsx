@@ -146,8 +146,8 @@ describe('RulesPage Component', () => {
   it('displays all risk rules', () => {
     render(<RulesPage />);
     expect(screen.getByText('Personal daily limit')).toBeInTheDocument();
-    expect(screen.getByText('FTMO daily hard stop')).toBeInTheDocument();
-    expect(screen.getByText('FTMO max drawdown')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm daily hard stop')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm max drawdown')).toBeInTheDocument();
     expect(screen.getByText('2-loss rule')).toBeInTheDocument();
     expect(screen.getByText('Wednesday max tier')).toBeInTheDocument();
     expect(screen.getByText('BE rule')).toBeInTheDocument();

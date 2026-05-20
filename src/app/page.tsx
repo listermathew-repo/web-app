@@ -8,14 +8,14 @@ const todayChecklist = [
   { id: 4, label: "Wednesday check — A+ only, T2 max if applicable", field: "Default = wait unless perfect setup" },
   { id: 5, label: "15:00 check — run signal check", field: "5 conditions + spread + Scenario 1" },
   { id: 6, label: "Post-session log — complete within 10 mins", field: "Process score + psych score + one lesson" },
-  { id: 7, label: "Update FTMO shadow tracker", field: "Real P&L × 1.25 = shadow P&L" },
+  { id: 7, label: "Update Prop Firm shadow tracker", field: "Real P&L × 1.25 = shadow P&L" },
 ];
 
 const quickStats = [
   { label: "Account balance", value: "$80,000", sub: "Capital.com", color: "text-slate-800" },
   { label: "Daily loss limit", value: "$1,600", sub: "2% personal stop", color: "text-amber-600" },
-  { label: "FTMO daily hard stop", value: "$4,000", sub: "5% — terminal halt", color: "text-red-600" },
-  { label: "FTMO max drawdown", value: "$8,000", sub: "10% — challenge over", color: "text-red-600" },
+  { label: "Prop Firm daily hard stop", value: "$4,000", sub: "5% — terminal halt", color: "text-red-600" },
+  { label: "Prop Firm max drawdown", value: "$8,000", sub: "10% — challenge over", color: "text-red-600" },
 ];
 
 export default function DashboardPage() {
@@ -124,10 +124,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* FTMO Status */}
+      {/* Prop Firm Tracker */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">FTMO Shadow Tracker</h2>
+          <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">Prop Firm Tracker</h2>
           <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded px-2 py-0.5">⏳ IN PROGRESS</span>
         </div>
         <div className="grid grid-cols-3 gap-4 mb-4">
@@ -154,7 +154,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { href: "/rules",      label: "Trading Rules", icon: "◎" },
-          { href: "/ftmo",       label: "FTMO Plan",     icon: "◈" },
+          { href: "/ftmo",       label: "Prop Firm Plan",     icon: "◈" },
           { href: "/psychology", label: "Psychology",    icon: "◉" },
           { href: "/goals",      label: "Goals",         icon: "◇" },
         ].map((link) => (
