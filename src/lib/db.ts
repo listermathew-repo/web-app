@@ -274,6 +274,16 @@ export const dbOps = {
     return run(sql, [symbol, level, price]);
   },
 
+  // Open positions (for /api/positions endpoint)
+  getOpenPositions: () => {
+    const sql = `
+      SELECT * FROM trades
+      WHERE status NOT IN ('exited', 'closed', 'failed')
+      ORDER BY created_at DESC
+    `;
+    return all(sql);
+  },
+
   // Cleanup
   autoCleanupExpiredTrades: () => {
     const sql = `
