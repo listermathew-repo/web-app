@@ -1,0 +1,274 @@
+{
+  "version": "1.0",
+  "createdDate": "2026-05-21",
+  "tradingSystem": "Four-Scenario Market Alignment Framework (MAF)",
+  "status": "ACTIVE - DEMO MODE",
+
+  "scenarios": {
+    "scenario_1": {
+      "id": "scenario_1",
+      "name": "Swing Break",
+      "description": "Clear long bias, all conditions strong",
+      "bias": "STRONG LONG",
+      "confidence": "HIGH",
+      "entry_ready": true,
+      "conditions": {
+        "c4": {
+          "name": "Price > EMA20",
+          "description": "Price above 20-period moving average",
+          "required": true
+        },
+        "c3": {
+          "name": "EMA10 > EMA21",
+          "description": "Short-term trend aligned bullish (golden cross)",
+          "required": true
+        },
+        "c1": {
+          "name": "VWAP Bounce",
+          "description": "Price reclaiming VWAP from below",
+          "required": true
+        }
+      },
+      "confirmation": {
+        "full_body_close": "Required - Close must fully above/below level",
+        "impulsive_candle": "Required - Engagement on impulsive move, not consolidation",
+        "volume_profile": "Volume increasing into breakout direction"
+      }
+    },
+    "scenario_2": {
+      "id": "scenario_2",
+      "name": "Retap/Retest",
+      "description": "Cautious long setup, some caution needed",
+      "bias": "LONG - CAUTIOUS",
+      "confidence": "MEDIUM",
+      "entry_ready": true,
+      "conditions": {
+        "c4": {
+          "name": "Price > EMA20",
+          "description": "Price above 20-period moving average",
+          "required": true
+        },
+        "c3": {
+          "name": "EMA10 > EMA21",
+          "description": "Short-term trend aligned bullish",
+          "required": true
+        },
+        "c1": {
+          "name": "VWAP Bounce",
+          "description": "Price retesting VWAP support from above",
+          "required": true
+        }
+      },
+      "confirmation": {
+        "full_body_close": "Critical - Must see full body close at retest level",
+        "impulsive_candle": "Wait for impulsive move OFF the retest level",
+        "volume_profile": "Watch for declining volume in consolidation zone"
+      }
+    },
+    "scenario_3": {
+      "id": "scenario_3",
+      "name": "Continuation",
+      "description": "Ambiguous/neutral bias",
+      "bias": "NEUTRAL",
+      "confidence": "LOW",
+      "entry_ready": false,
+      "conditions": {
+        "c4": {
+          "name": "Price > EMA20",
+          "required": true
+        },
+        "c3": {
+          "name": "EMA10 > EMA21",
+          "required": true
+        },
+        "c1": {
+          "name": "VWAP Bounce",
+          "required": false
+        }
+      },
+      "note": "Usually skip entries in Scenario 3 unless clear confirmation"
+    },
+    "scenario_4": {
+      "id": "scenario_4",
+      "name": "Reversal/Risk-Off",
+      "description": "Downside bias or risk-off mode",
+      "bias": "SHORT or NO ENTRY",
+      "confidence": "HIGH (for shorts)",
+      "entry_ready": false,
+      "conditions": {
+        "c4": {
+          "name": "Price < EMA20",
+          "description": "Price below 20-period moving average",
+          "required": true
+        },
+        "c3": {
+          "name": "EMA10 < EMA21",
+          "description": "Short-term trend bearish",
+          "required": true
+        }
+      },
+      "note": "No LONG entry unless clear retest of support with full body close"
+    }
+  },
+
+  "entry_conditions": {
+    "required_conditions": ["c4", "c3", "c1"],
+    "confirmation_rules": {
+      "full_body_close": "Close must fully close above/below alert price level",
+      "impulsive_candle": "Entry must be on impulsive candle, not consolidation",
+      "volume_alignment": "Volume increasing in direction of entry"
+    },
+    "risk_management": {
+      "risk_per_trade": 400,
+      "risk_currency": "USD",
+      "minimum_r_multiple": 1.0,
+      "target_r_multiple": 1.5,
+      "maximum_daily_losses": 3,
+      "max_loss_per_day": 1200
+    },
+    "position_sizing": {
+      "fixed_risk": 400,
+      "calculation": "Risk $ / (Entry - SL) = Position Size",
+      "example": "If Entry=1.16353, SL=1.1617, Risk=$400: Pip distance=183 = 2.19 lots"
+    }
+  },
+
+  "trading_window": {
+    "session": "ADL (Adelaide)",
+    "start_time": "09:00",
+    "end_time": "15:00",
+    "timezone": "ACST",
+    "duration_hours": 6,
+    "rule": "Alerts outside this window are IGNORED - no entries before 9am or after 3pm"
+  },
+
+  "alert_levels": {
+    "eurusd": {
+      "symbol": "EURUSD",
+      "alerts": [
+        {
+          "level": 1.16353,
+          "condition": "Close above",
+          "type": "Scenario 1 Breakout",
+          "action": "LONG entry on impulsive move",
+          "message": "[EURUSD] 1.16353 BREAKOUT | Scenario 1 Confirmed | Risk $400 | Target 1.1675+"
+        },
+        {
+          "level": 1.16260,
+          "condition": "Crosses above",
+          "type": "Entry Retap",
+          "action": "Prepare for LONG on full body close + impulsive",
+          "message": "[EURUSD] 1.16260 RETAP | Entry zone active | Watch for 4H close"
+        },
+        {
+          "level": 1.1617,
+          "condition": "Close below",
+          "type": "Stop Loss",
+          "action": "Setup invalid - EXIT signal",
+          "message": "[EURUSD] 1.1617 STOP | Support break | Exit setup"
+        }
+      ]
+    },
+    "xauusd": {
+      "symbol": "XAUUSD",
+      "alerts": [
+        {
+          "level": 4570.895,
+          "condition": "Close above",
+          "type": "Scenario 1 Breakout",
+          "action": "LONG entry on impulsive move",
+          "message": "[XAUUSD] 4570.895 BREAKOUT | Scenario 1 Confirmed | Risk $400 | Target 4600+"
+        },
+        {
+          "level": 4555,
+          "condition": "Crosses above",
+          "type": "Entry Retap",
+          "action": "Prepare for LONG on full body close + impulsive",
+          "message": "[XAUUSD] 4555 RETAP | Entry zone active | Watch for 4H close"
+        },
+        {
+          "level": 4534.74,
+          "condition": "Close below",
+          "type": "Stop Loss",
+          "action": "Setup invalid - EXIT signal",
+          "message": "[XAUUSD] 4534.74 STOP | Support break | Exit setup"
+        }
+      ]
+    },
+    "btcusd": {
+      "symbol": "BTCUSD",
+      "alerts": [
+        {
+          "level": 78103,
+          "condition": "Close above",
+          "type": "Scenario 1 Breakout",
+          "action": "LONG entry on impulsive move",
+          "message": "[BTCUSD] 78103 BREAKOUT | Scenario 1 Confirmed | Risk $400 | Target 79000+"
+        },
+        {
+          "level": 77950,
+          "condition": "Crosses above",
+          "type": "Entry Retap",
+          "action": "Prepare for LONG on full body close + impulsive",
+          "message": "[BTCUSD] 77950 RETAP | Entry zone active | Watch for 4H close"
+        },
+        {
+          "level": 77155,
+          "condition": "Close below",
+          "type": "Stop Loss",
+          "action": "Setup invalid - EXIT signal",
+          "message": "[BTCUSD] 77155 STOP | Support break | Exit setup"
+        }
+      ]
+    }
+  },
+
+  "watchlist": {
+    "primary_symbols": ["EURUSD", "XAUUSD", "BTCUSD"],
+    "timeframe_analysis": "4H",
+    "entry_timeframe": "4H (4-hour close confirmation)",
+    "monitoring_frequency": "Hourly during 9am-3pm ADL"
+  },
+
+  "demo_mode": {
+    "status": "ACTIVE",
+    "type": "PAPER TRADING ONLY",
+    "duration": "2-3 weeks",
+    "validation_target": "66%+ win rate on 20+ trades",
+    "success_metrics": {
+      "minimum_trades": 20,
+      "target_win_rate": 0.668,
+      "minimum_wins": 13,
+      "maximum_losses": 7,
+      "target_monthly_pnl": 8000
+    },
+    "next_phase": "Live Capital.com trading after validation"
+  },
+
+  "webhook_configuration": {
+    "platform": "NTFY.sh",
+    "topic_url": "https://ntfy.sh/mgm-7k4x-live",
+    "protocol": "POST",
+    "notification_type": "Real-time price alerts",
+    "delivery": "Desktop + mobile notifications"
+  },
+
+  "file_references": {
+    "memory_files": {
+      "trading_environment": "C:\\Users\\mathe\\.claude\\projects\\C--Users-mathe-Documents-tradingview-mcp\\memory\\trading_environment.md",
+      "mcp_solution": "C:\\Users\\mathe\\.claude\\projects\\C--Users-mathe-Documents-tradingview-mcp\\memory\\MCP-TRADINGVIEW-ALERTING-SOLUTION.md",
+      "setup_complete": "C:\\Users\\mathe\\TRADING_SETUP_COMPLETE.md"
+    },
+    "data_files": {
+      "excel_journal": "C:\\Users\\mathe\\Live_Trading_Journal_DEMO.xlsx",
+      "action_items": "C:\\Users\\mathe\\ACTION_ITEMS_NOW.txt"
+    }
+  },
+
+  "implementation_status": {
+    "pine_script_alert": "PENDING - Deploy after May 21 demo window",
+    "manual_alerts_eurusd": "REQUIRED TODAY - 3 alerts for 9am-3pm window",
+    "python_stream": "OPTIONAL - Full autonomy alternative",
+    "live_trading": "SCHEDULED AFTER DEMO VALIDATION"
+  }
+}
