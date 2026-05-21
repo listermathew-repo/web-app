@@ -13,6 +13,7 @@ if (!fs.existsSync(dbDir)) {
 
 // Initialize database (synchronous, serverless-compatible)
 let db: Database.Database | null = null;
+let schemaInitialized = false;
 
 export function getDatabase(): Database.Database {
   if (!db) {
@@ -20,6 +21,17 @@ export function getDatabase(): Database.Database {
     // Enable foreign keys
     db.pragma('foreign_keys = ON');
     console.log(`Database connected: ${dbPath}`);
+
+    // Initialize schema if not already done
+    if (!schemaInitialized) {
+      try {
+        initializeDatabase();
+        schemaInitialized = true;
+      } catch (err) {
+        console.error('Failed to initialize database schema:', err);
+        // Continue anyway - tables might already exist
+      }
+    }
   }
   return db;
 }
