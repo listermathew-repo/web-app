@@ -9,8 +9,8 @@ const tiers = [
 
 const riskRules = [
   { rule: "Personal daily limit",     value: "$1,600 (2% of $80k)",      note: "Hit this = stop. Platform closes. No re-entry today." },
-  { rule: "FTMO daily hard stop",     value: "$4,000 (5% shadow)",        note: "Terminal halt regardless of setup quality." },
-  { rule: "FTMO max drawdown",        value: "$8,000 (10% shadow)",       note: "Challenge over if breached. Soft buffer at $7,200." },
+  { rule: "Prop Firm daily hard stop",     value: "$4,000 (5% shadow)",        note: "Terminal halt regardless of setup quality." },
+  { rule: "Prop Firm max drawdown",        value: "$8,000 (10% shadow)",       note: "Challenge over if breached. Soft buffer at $7,200." },
   { rule: "2-loss rule",              value: "2 losses in one session",   note: "Close platform immediately. No discussion." },
   { rule: "Wednesday max tier",       value: "T2 only — A+ required",     note: "No T3/T4 on Wednesdays." },
   { rule: "BE rule",                  value: "Move SL to BE at +1R",      note: "Apply when price reaches 1R from entry." },
