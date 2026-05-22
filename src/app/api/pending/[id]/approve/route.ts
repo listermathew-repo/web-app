@@ -11,6 +11,16 @@ export async function POST(
   try {
     const { id } = params;
 
+    // 0. Authenticate with X-API-Key header
+    const apiKey = request.headers.get('X-API-Key');
+    if (!apiKey || apiKey !== process.env.WEBHOOK_API_KEY) {
+      console.warn('Unauthorized approval attempt: Invalid API key');
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid API key' },
+        { status: 401 }
+      );
+    }
+
     // 1. Get pending trade from database
     const pendingTrade = dbOps.getPendingTradeById(id);
     if (!pendingTrade) {

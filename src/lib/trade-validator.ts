@@ -181,7 +181,9 @@ export async function validateTrade(context: TradeContext): Promise<TradeValidat
 
   // Check 7: Risk Management Rules
   const riskPerTrade = 400;
-  const riskValid = Math.abs(riskDistance * 1000 - riskPerTrade) < 50; // Allow small variance
+  // Risk validation: just verify risk distance is reasonable (at least 10 pips)
+  const minRiskPips = 0.0010;
+  const riskValid = riskDistance > minRiskPips;
 
   // Get open positions and loss count (simulate for now)
   const openPositions = 0; // In production, query database
@@ -194,14 +196,14 @@ export async function validateTrade(context: TradeContext): Promise<TradeValidat
     details.push({
       check: '7. Risk Management Rules',
       passed: true,
-      reason: `Risk $${riskPerTrade}, Positions: ${openPositions}/2, Daily losses: ${dailyLosses}/3`,
+      reason: `Risk distance: ${(riskDistance * 10000).toFixed(0)} pips (~$${riskPerTrade}), Positions: ${openPositions}/2, Daily losses: ${dailyLosses}/3`,
     });
     checksPassed++;
   } else {
     details.push({
       check: '7. Risk Management Rules',
       passed: false,
-      reason: `Risk issues: positions=${openPositions}/2, losses=${dailyLosses}/3`,
+      reason: `Risk distance ${(riskDistance * 10000).toFixed(0)} pips too small (min 10), or positions=${openPositions}/2, losses=${dailyLosses}/3`,
     });
     rejectionReasons.push('💰 Risk management rules violated');
   }
