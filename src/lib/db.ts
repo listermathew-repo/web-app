@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { runAllMigrations } from './db-migrations';
 
 // Database file path
 const dbPath = path.join(process.cwd(), '.db', 'trading.db');
@@ -129,6 +130,13 @@ export function initializeDatabase() {
       db.exec(statement);
     }
     console.log('Database schema initialized');
+
+    // Run migrations
+    try {
+      runAllMigrations(db);
+    } catch (migrationErr) {
+      console.error('Migration failed (continuing anyway):', migrationErr);
+    }
   } catch (err) {
     console.error('Schema initialization error:', err);
     throw err;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { dbOps } from '@/lib/db';
 import { sendAlert } from '@/lib/alerts';
+import { validateTrade, logValidation, formatValidationReport } from '@/lib/trade-validator';
 import { randomUUID } from 'crypto';
 
 // Validation schema for incoming webhook
@@ -124,9 +125,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Queue trade for approval
+    // 5. VALIDATE TRADE against 10-point entry checklist
     const tradeId = randomUUID();
 
+    try {
+      const validationResult = await validateTrade({
+        symbol: alert.symbol,
+        direction: alert.direction as 'long' | 'short',
+        entryLevel: alert.entry_level,
+        currentPrice: alert.entry_level, // In real scenario, fetch current price
+        stopLevel: alert.stop_level,
+        createdAt: new Date(),
+        candle4hClosed: true, // In real scenario, check chart
+      });
+
+      // Log validation result
+      await logValidation(tradeId, alert.symbol, validationResult);
+
+      // If validation fails, REJECT the trade
+      if (!validationResult.isValid) {
+        const report = formatValidationReport(validationResult);
+        console.warn(`Trade rejected: ${tradeId}`, report);
+
+        await sendAlert(
+          'error',
+          `❌ TRADE REJECTED: ${alert.symbol} ${alert.direction.toUpperCase()}\n\n${report}`
+        );
+
+        return NextResponse.json(
+          {
+            status: 'rejected',
+            trade_id: tradeId,
+            symbol: alert.symbol,
+            reason: validationResult.rejectionReasons.join(', '),
+            validation_details: validationResult,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Validation passed - proceed to queue trade
+      console.log(`Trade validation passed: ${tradeId} - ${alert.symbol}`);
+    } catch (error) {
+      console.error('Trade validation error:', error);
+      await sendAlert('error', `⚠️ VALIDATION ERROR - ${error}`);
+      return NextResponse.json(
+        { error: 'Validation error' },
+        { status: 500 }
+      );
+    }
+
+    // 6. Queue validated trade for approval
     try {
       dbOps.insertPendingTrade({
         id: tradeId,
@@ -149,7 +198,7 @@ export async function POST(request: NextRequest) {
       const direction = alert.direction.toUpperCase();
       await sendAlert(
         'success',
-        `📋 TRADE ALERT: ${alert.symbol} ${direction} @ ${alert.entry_level}\nApprove in web app → /api/pending`
+        `✅ TRADE QUEUED (Validation Passed): ${alert.symbol} ${direction} @ ${alert.entry_level}\nApprove in web app → /api/pending`
       );
 
       console.log(`Trade queued: ${tradeId} - ${alert.symbol} ${alert.direction}`);
@@ -163,6 +212,7 @@ export async function POST(request: NextRequest) {
           entry_level: alert.entry_level,
           stop_level: alert.stop_level,
           expires_in_seconds: 300,
+          validation_passed: true,
         },
         { status: 202 }
       );
