@@ -426,6 +426,144 @@ export const dbOps = {
     `;
     return run(sql);
   },
+
+  // Backtest results
+  insertBacktestResult: (result: {
+    month: string;
+    instrument: string;
+    trades: number;
+    winRate: number;
+    totalRisk: number;
+    expectedWins: number;
+    expectedLoss: number;
+    netPnL: number;
+    roi: number;
+    riskPerTrade: number;
+    timestamp: string;
+  }) => {
+    // Create backtest_results table if not exists
+    getDatabase().exec(`
+      CREATE TABLE IF NOT EXISTS backtest_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        month TEXT NOT NULL,
+        instrument TEXT NOT NULL,
+        trades INTEGER NOT NULL,
+        win_rate REAL NOT NULL,
+        total_risk REAL NOT NULL,
+        expected_wins REAL NOT NULL,
+        expected_loss REAL NOT NULL,
+        net_pnl REAL NOT NULL,
+        roi REAL NOT NULL,
+        risk_per_trade INTEGER NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const sql = `
+      INSERT INTO backtest_results
+      (month, instrument, trades, win_rate, total_risk, expected_wins, expected_loss, net_pnl, roi, risk_per_trade, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    return run(sql, [
+      result.month,
+      result.instrument,
+      result.trades,
+      result.winRate,
+      result.totalRisk,
+      result.expectedWins,
+      result.expectedLoss,
+      result.netPnL,
+      result.roi,
+      result.riskPerTrade,
+      result.timestamp,
+    ]);
+  },
+
+  getBacktestResults: (params: { riskPerTrade: number; months?: string[] }) => {
+    let sql = `
+      SELECT
+        month,
+        instrument,
+        trades,
+        win_rate as winRate,
+        total_risk as totalRisk,
+        expected_wins as expectedWins,
+        expected_loss as expectedLoss,
+        net_pnl as netPnL,
+        roi,
+        risk_per_trade as riskPerTrade
+      FROM backtest_results
+      WHERE risk_per_trade = ?
+    `;
+
+    const queryParams: any[] = [params.riskPerTrade];
+
+    if (params.months && params.months.length > 0) {
+      const placeholders = params.months.map(() => '?').join(',');
+      sql += ` AND month IN (${placeholders})`;
+      queryParams.push(...params.months);
+    }
+
+    sql += ` ORDER BY month`;
+
+    const stmt = getDatabase().prepare(sql);
+    const results = stmt.all(...queryParams);
+    return results as Array<{
+      month: string;
+      instrument: string;
+      trades: number;
+      winRate: number;
+      totalRisk: number;
+      expectedWins: number;
+      expectedLoss: number;
+      netPnL: number;
+      roi: number;
+      riskPerTrade: number;
+    }>;
+  },
+
+  getBacktestSummary: (params: { riskPerTrade: number; period?: '4month' | 'february' | 'march' | 'april' | 'may' }) => {
+    let months: string[] = ['FEB', 'MAR', 'APR', 'MAY'];
+
+    if (params.period && params.period !== '4month') {
+      const monthMap: Record<string, string> = {
+        february: 'FEB',
+        march: 'MAR',
+        april: 'APR',
+        may: 'MAY',
+      };
+      months = [monthMap[params.period] || 'APR'];
+    }
+
+    const results = dbOps.getBacktestResults({
+      riskPerTrade: params.riskPerTrade,
+      months,
+    });
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const totalNetPnL = results.reduce((sum, r) => sum + r.netPnL, 0);
+    const totalRisk = results.reduce((sum, r) => sum + r.totalRisk, 0);
+    const totalROI = totalRisk > 0 ? totalNetPnL / totalRisk : 0;
+    const averageMonthlyPnL = totalNetPnL / results.length;
+
+    const sorted = [...results].sort((a, b) => b.netPnL - a.netPnL);
+
+    return {
+      totalNetPnL,
+      totalROI,
+      averageMonthlyPnL,
+      bestMonth: sorted[0]?.month || 'N/A',
+      bestMonthPnL: sorted[0]?.netPnL || 0,
+      worstMonth: sorted[sorted.length - 1]?.month || 'N/A',
+      worstMonthPnL: sorted[sorted.length - 1]?.netPnL || 0,
+      totalTrades: results.reduce((sum, r) => sum + r.trades, 0),
+      averageWinRate: results.reduce((sum, r) => sum + r.winRate, 0) / results.length,
+    };
+  },
 };
 
 export default getDatabase;
