@@ -380,6 +380,12 @@ export const dbOps = {
     ]);
   },
 
+  // Query validation log for a trade
+  getValidationLog: (tradeId: string) => {
+    const sql = 'SELECT * FROM validation_log WHERE trade_id = ? LIMIT 1';
+    return get(sql, [tradeId]);
+  },
+
   // Cleanup
   autoCleanupExpiredTrades: () => {
     const sql = `
