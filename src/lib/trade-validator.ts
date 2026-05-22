@@ -33,6 +33,7 @@ export interface TradeContext {
   entryLevel: number;
   currentPrice: number;
   stopLevel: number;
+  retapLevel?: number;
   createdAt: Date;
   volume?: number;
   candle4hClosed?: boolean;
@@ -40,6 +41,7 @@ export interface TradeContext {
   ema10?: number;
   ema21?: number;
   vwap?: number;
+  rsi?: number;
   volumeAvg?: number;
   atr?: number;
   minutesSince4hClose?: number;
@@ -419,28 +421,57 @@ export async function validateTradeWithRules(
   // Step 1: Run the 10-point checklist validation
   const checklistResult = await validateTrade(context);
 
-  // Step 2: Run rule-based validation
+  // Step 2: Populate real data for rule evaluation
+  // Query open positions from database
+  const openPositions = dbOps.getOpenPositions();
+  const openPositionsCount = openPositions.length;
+
+  // Query today's trades for daily loss/profit calculations
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStart = today.toISOString();
+  const todayTrades = dbOps.getTradeHistory({ since: todayStart });
+
+  // Calculate daily losses count (trades with pnl <= 0)
+  const dailyLossesCount = todayTrades.filter((t: any) => t.pnl && t.pnl <= 0).length;
+
+  // Calculate daily profit (sum of all P&L today)
+  const dailyProfit = todayTrades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0);
+
+  // Calculate minutes since NY open (08:00 EST / 23:30 ADL previous day)
+  // For now using 08:00 EST equivalent calculation
+  const now = new Date();
+  const estTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const nyOpenHour = 8; // 08:00 EST
+  const nyOpenToday = new Date(estTime);
+  nyOpenToday.setHours(nyOpenHour, 0, 0, 0);
+  const minutesSinceNyOpen = nyOpenToday > estTime ? 1440 : Math.floor((estTime.getTime() - nyOpenToday.getTime()) / 60000);
+
+  // Calculate risk_amount from entry/stop/position size
+  const riskAmount = Math.abs((context.entryLevel - context.stopLevel) * 100000 * (context.retapLevel ? 1 : 0.5));
+
+  // Step 3: Run rule-based validation with real data
   const ruleResult = await evaluateTradeAgainstRules(context.direction, {
     symbol: context.symbol,
     entry_price: context.entryLevel,
     stop_price: context.stopLevel,
-    retap_level: context.entryLevel + (context.direction === 'long' ? 0.0020 : -0.0020), // Example TP
+    retap_level: context.retapLevel || (context.direction === 'long' ? context.entryLevel + 0.0020 : context.entryLevel - 0.0020),
     price: context.currentPrice,
     vwap: context.vwap,
     ema10: context.ema10,
     ema21: context.ema21,
-    ema20: context.ema21, // Use EMA21 as proxy for EMA20
-    rsi: undefined, // Would come from Pine Script
+    ema20: context.ema21, // Use EMA21 as proxy for EMA20 if not provided
+    rsi: context.rsi, // From Pine Script webhook
     atr: context.atr,
-    open_positions: 0, // Would come from Capital.com
-    account_size: 10000, // Would come from account
-    risk_amount: 100, // Would be calculated
-    daily_losses_count: 0, // Would come from DB
-    daily_profit: 0, // Would come from DB
-    minutes_since_ny_open: 0, // Would be calculated
+    open_positions: openPositionsCount, // From database
+    account_size: parseInt(process.env.ACCOUNT_SIZE || '10000', 10), // From environment
+    risk_amount: Math.round(riskAmount), // Calculated from prices
+    daily_losses_count: dailyLossesCount, // From today's trades
+    daily_profit: Math.round(dailyProfit), // From today's trades P&L
+    minutes_since_ny_open: minutesSinceNyOpen, // Calculated from NY time
   });
 
-  // Step 3: Combine results
+  // Step 4: Combine results
   const combined: TradeValidationWithRules = {
     ...checklistResult,
     rule_evaluation: ruleResult,

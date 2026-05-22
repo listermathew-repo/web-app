@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { dbOps } from '@/lib/db';
 import { sendAlert } from '@/lib/alerts';
-import { validateTrade, logValidation, formatValidationReport } from '@/lib/trade-validator';
+import { validateTrade, validateTradeWithRules, logValidation, formatValidationReport } from '@/lib/trade-validator';
 import { randomUUID } from 'crypto';
 
 // Validation schema for incoming webhook
@@ -14,10 +14,11 @@ const TradeAlertSchema = z.object({
   retap_level: z.number().positive().optional(),
   risk_amount: z.number().positive().optional(),
   scenario: z.string().optional(),
-  // Chart confirmation data from Pine Script (optional)
+  // Chart confirmation data from Pine Script
   ema10: z.number().optional(),
   ema21: z.number().optional(),
   vwap: z.number().optional(),
+  rsi: z.number().min(0).max(100).optional(), // RSI 0-100 range
   volume: z.number().positive().optional(),
   volume_avg: z.number().positive().optional(),
   atr: z.number().positive().optional(),
@@ -135,6 +136,7 @@ export async function POST(request: NextRequest) {
 
     // 5. VALIDATE TRADE against 10-point entry checklist
     const tradeId = randomUUID();
+    let validationResult: any;
 
     try {
       const tradeContext = {
@@ -143,19 +145,21 @@ export async function POST(request: NextRequest) {
         entryLevel: alert.entry_level,
         currentPrice: alert.entry_level, // In real scenario, fetch current price
         stopLevel: alert.stop_level,
+        retapLevel: alert.retap_level,
         createdAt: new Date(),
         candle4hClosed: true, // In real scenario, check chart
         // Chart confirmation data from Pine Script
         ema10: alert.ema10,
         ema21: alert.ema21,
         vwap: alert.vwap,
+        rsi: alert.rsi,
         volume: alert.volume,
         volumeAvg: alert.volume_avg,
         atr: alert.atr,
         minutesSince4hClose: alert.minutes_since_4h_close,
       };
 
-      const validationResult = await validateTrade(tradeContext);
+      validationResult = await validateTradeWithRules(tradeContext);
 
       // Log validation result with context
       await logValidation(tradeId, alert.symbol, alert.direction, validationResult, tradeContext);
@@ -205,6 +209,11 @@ export async function POST(request: NextRequest) {
         risk_amount: alert.risk_amount || 400,
         scenario: alert.scenario,
       });
+
+      // Store rule evaluation results for audit trail
+      if (validationResult.rule_evaluation) {
+        dbOps.storeRuleEvaluation(tradeId, validationResult.rule_evaluation);
+      }
 
       // Auto-cleanup expired trades
       dbOps.autoCleanupExpiredTrades();
