@@ -7,7 +7,48 @@ import Database from 'better-sqlite3';
 
 export function migrateToV2(db: Database.Database): void {
   try {
-    // Step 1: Add chart-related columns to trades table
+    // Step 1: Add rule tracking columns to trades table
+    console.log('🔄 Migration V2: Adding rule tracking columns to trades...');
+    try {
+      db.exec(`
+        ALTER TABLE trades
+        ADD COLUMN rule_version TEXT DEFAULT '1.0';
+      `);
+      console.log('  ✅ Added rule_version');
+    } catch (err: any) {
+      if (!err.message.includes('already exists')) {
+        throw err;
+      }
+      console.log('  ⏭️  rule_version already exists');
+    }
+
+    try {
+      db.exec(`
+        ALTER TABLE trades
+        ADD COLUMN rule_conditions_met TEXT;
+      `);
+      console.log('  ✅ Added rule_conditions_met (JSON)');
+    } catch (err: any) {
+      if (!err.message.includes('already exists')) {
+        throw err;
+      }
+      console.log('  ⏭️  rule_conditions_met already exists');
+    }
+
+    try {
+      db.exec(`
+        ALTER TABLE trades
+        ADD COLUMN pre_entry_checks TEXT;
+      `);
+      console.log('  ✅ Added pre_entry_checks (JSON)');
+    } catch (err: any) {
+      if (!err.message.includes('already exists')) {
+        throw err;
+      }
+      console.log('  ⏭️  pre_entry_checks already exists');
+    }
+
+    // Step 2: Add chart-related columns to trades table
     console.log('🔄 Migration V2: Adding chart columns to trades...');
     try {
       db.exec(`

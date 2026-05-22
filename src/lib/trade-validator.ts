@@ -1,10 +1,13 @@
 /**
  * Trade Validator
- * Validates incoming trade alerts against 10-point entry checklist
+ * Validates incoming trade alerts against:
+ * 1. 10-point entry checklist (legacy)
+ * 2. Configurable trading rules (new)
  * Auto-rejects trades that don't meet strategy criteria
  */
 
 import { dbOps } from './db';
+import { evaluateTradeAgainstRules, RuleEvaluation } from './rule-validator';
 
 export interface TradeValidationResult {
   isValid: boolean;
@@ -17,6 +20,11 @@ export interface TradeValidationResult {
   }[];
   recommendation: 'APPROVE' | 'REJECT';
   rejectionReasons: string[];
+}
+
+export interface TradeValidationWithRules extends TradeValidationResult {
+  rule_evaluation?: RuleEvaluation;
+  combined_recommendation: 'APPROVE' | 'REJECT';
 }
 
 export interface TradeContext {
@@ -400,6 +408,49 @@ export async function logValidation(
   } catch (error) {
     console.error('Failed to log validation:', error);
   }
+}
+
+/**
+ * Validate trade against BOTH checklist and configurable rules
+ */
+export async function validateTradeWithRules(
+  context: TradeContext
+): Promise<TradeValidationWithRules> {
+  // Step 1: Run the 10-point checklist validation
+  const checklistResult = await validateTrade(context);
+
+  // Step 2: Run rule-based validation
+  const ruleResult = await evaluateTradeAgainstRules(context.direction, {
+    symbol: context.symbol,
+    entry_price: context.entryLevel,
+    stop_price: context.stopLevel,
+    retap_level: context.entryLevel + (context.direction === 'long' ? 0.0020 : -0.0020), // Example TP
+    price: context.currentPrice,
+    vwap: context.vwap,
+    ema10: context.ema10,
+    ema21: context.ema21,
+    ema20: context.ema21, // Use EMA21 as proxy for EMA20
+    rsi: undefined, // Would come from Pine Script
+    atr: context.atr,
+    open_positions: 0, // Would come from Capital.com
+    account_size: 10000, // Would come from account
+    risk_amount: 100, // Would be calculated
+    daily_losses_count: 0, // Would come from DB
+    daily_profit: 0, // Would come from DB
+    minutes_since_ny_open: 0, // Would be calculated
+  });
+
+  // Step 3: Combine results
+  const combined: TradeValidationWithRules = {
+    ...checklistResult,
+    rule_evaluation: ruleResult,
+    combined_recommendation:
+      checklistResult.recommendation === 'APPROVE' && ruleResult.recommendation === 'ACCEPT'
+        ? 'APPROVE'
+        : 'REJECT',
+  };
+
+  return combined;
 }
 
 /**

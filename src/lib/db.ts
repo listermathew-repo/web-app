@@ -386,6 +386,37 @@ export const dbOps = {
     return get(sql, [tradeId]);
   },
 
+  // Store rule evaluation on trade
+  storeRuleEvaluation: (tradeId: string, ruleEvaluation: any) => {
+    const sql = `
+      UPDATE trades
+      SET
+        rule_version = ?,
+        rule_conditions_met = ?,
+        pre_entry_checks = ?
+      WHERE id = ?
+    `;
+    return run(sql, [
+      ruleEvaluation.rule_version,
+      JSON.stringify(ruleEvaluation.conditions_evaluated),
+      JSON.stringify(ruleEvaluation.pre_entry_checks),
+      tradeId,
+    ]);
+  },
+
+  // Get rule evaluation for a trade
+  getRuleEvaluation: (tradeId: string) => {
+    const sql = `
+      SELECT
+        rule_version,
+        rule_conditions_met,
+        pre_entry_checks
+      FROM trades
+      WHERE id = ?
+    `;
+    return get(sql, [tradeId]);
+  },
+
   // Cleanup
   autoCleanupExpiredTrades: () => {
     const sql = `
