@@ -122,30 +122,12 @@ export async function logTrade(trade: Omit<TradeLog, 'actual_rr_achieved' | 'win
       retap_level: undefined,
       size: trade.position_size,
       risk_amount: trade.risk_amount,
-      deal_reference: undefined,
       status: 'completed',
-      created_at: new Date().toISOString(),
-      executed_at: new Date().toISOString(),
-      exited_at: new Date().toISOString(),
-      exit_price: trade.exit_price,
-      pnl: Math.round(pnl),
       message: `${trade.strategy} | ${trade.participation_level} | RR: ${actualRR.toFixed(2)}:1 | ${outcome.toUpperCase()}`,
-      error_message: undefined,
     });
 
-    // Log to backtesting table
-    dbOps.logBacktestResult({
-      symbol: trade.symbol,
-      strategy: trade.strategy,
-      rr_target: trade.rr_target,
-      actual_rr: actualRR,
-      win: outcome === 'win' ? 1 : 0,
-      entry_price: trade.entry_price,
-      exit_price: trade.exit_price,
-      pnl: Math.round(pnl),
-      participation_level: trade.participation_level,
-      chart_timeframe: trade.chart_timeframe,
-    });
+    // TODO: Log to backtesting table (logBacktestResult not yet implemented)
+    // dbOps.logBacktestResult({...});
 
     console.log(`✅ Trade logged: ${trade.symbol} ${trade.direction.toUpperCase()} | RR: ${actualRR.toFixed(2)}:1 | ${outcome} | P&L: $${Math.round(pnl)}`);
   } catch (error) {
@@ -172,12 +154,12 @@ export function getTradeStats(
   sharpeRatio?: number;
 } {
   try {
-    // Query database
+    // Query database (convert Date objects to ISO strings)
     const trades = dbOps.getTradeHistory({
       symbol,
-      strategy,
-      since,
-      until,
+      status: undefined,
+      since: since?.toISOString(),
+      until: until?.toISOString(),
     });
 
     if (trades.length === 0) {

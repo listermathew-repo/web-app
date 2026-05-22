@@ -115,6 +115,29 @@ export function initializeDatabase() {
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
 
+    `CREATE TABLE IF NOT EXISTS validation_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trade_id TEXT UNIQUE,
+      symbol TEXT NOT NULL,
+      direction TEXT NOT NULL,
+      ema10 REAL,
+      ema21 REAL,
+      ema_aligned BOOLEAN,
+      price REAL,
+      vwap REAL,
+      price_above_vwap BOOLEAN,
+      volume REAL,
+      volume_avg REAL,
+      volume_confirmed BOOLEAN,
+      atr REAL,
+      atr_valid BOOLEAN,
+      candle_4h_minutes_since_close INTEGER,
+      candle_4h_valid BOOLEAN,
+      overall_valid BOOLEAN,
+      rejection_reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+
     `CREATE INDEX IF NOT EXISTS idx_pending_trades_symbol ON pending_trades(symbol)`,
     `CREATE INDEX IF NOT EXISTS idx_pending_trades_status ON pending_trades(status)`,
     `CREATE INDEX IF NOT EXISTS idx_pending_trades_created_at ON pending_trades(created_at)`,
@@ -123,6 +146,9 @@ export function initializeDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_trades_created_at ON trades(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_alert_log_symbol ON alert_log(symbol)`,
     `CREATE INDEX IF NOT EXISTS idx_alert_log_timestamp ON alert_log(timestamp)`,
+    `CREATE INDEX IF NOT EXISTS idx_validation_log_trade_id ON validation_log(trade_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_validation_log_symbol ON validation_log(symbol)`,
+    `CREATE INDEX IF NOT EXISTS idx_validation_log_created_at ON validation_log(created_at)`,
   ];
 
   try {
@@ -302,6 +328,56 @@ export const dbOps = {
       ORDER BY created_at DESC
     `;
     return all(sql);
+  },
+
+  // Validation log
+  logValidationResult: (validation: {
+    trade_id: string;
+    symbol: string;
+    direction: string;
+    ema10?: number;
+    ema21?: number;
+    ema_aligned?: boolean;
+    price?: number;
+    vwap?: number;
+    price_above_vwap?: boolean;
+    volume?: number;
+    volume_avg?: number;
+    volume_confirmed?: boolean;
+    atr?: number;
+    atr_valid?: boolean;
+    candle_4h_minutes_since_close?: number;
+    candle_4h_valid?: boolean;
+    overall_valid: boolean;
+    rejection_reason?: string;
+  }) => {
+    const sql = `
+      INSERT INTO validation_log
+      (trade_id, symbol, direction, ema10, ema21, ema_aligned, price, vwap, price_above_vwap,
+       volume, volume_avg, volume_confirmed, atr, atr_valid, candle_4h_minutes_since_close,
+       candle_4h_valid, overall_valid, rejection_reason)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    return run(sql, [
+      validation.trade_id,
+      validation.symbol,
+      validation.direction,
+      validation.ema10,
+      validation.ema21,
+      validation.ema_aligned,
+      validation.price,
+      validation.vwap,
+      validation.price_above_vwap,
+      validation.volume,
+      validation.volume_avg,
+      validation.volume_confirmed,
+      validation.atr,
+      validation.atr_valid,
+      validation.candle_4h_minutes_since_close,
+      validation.candle_4h_valid,
+      validation.overall_valid ? 1 : 0,
+      validation.rejection_reason,
+    ]);
   },
 
   // Cleanup

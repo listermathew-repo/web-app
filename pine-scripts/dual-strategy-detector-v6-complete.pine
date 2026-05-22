@@ -1,0 +1,294 @@
+//@version=6
+indicator("Dual Strategy Detector COMPLETE (S1 + SMC + Confirmations)", overlay=true, max_labels_count=500, max_boxes_count=200)
+
+// ============================================================================
+// INPUTS
+// ============================================================================
+
+// Scenario 1 Settings
+group_s1 = "Scenario 1: Breakout/Retap"
+lookback_s1 = input.int(50, "Lookback (Swings)", minval=10, maxval=200, group=group_s1)
+breakout_pips = input.float(5, "Breakout Distance (pips)", minval=1, maxval=20, group=group_s1)
+retap_zone = input.float(10, "Retap Zone (pips)", minval=5, maxval=50, group=group_s1)
+
+// SMC/FVG Settings
+group_smc = "SMC/FVG Detection"
+fvg_min_pips = input.float(5, "Min FVG Gap (pips)", minval=2, maxval=20, group=group_smc)
+fvg_lookback = input.int(5, "FVG Fill Lookback (bars)", minval=3, maxval=20, group=group_smc)
+ls_volume_threshold = input.float(0.8, "Liquidity Sweep Vol Ratio", minval=0.5, maxval=1.5, group=group_smc)
+choch_swings_min = input.int(3, "Min Swings for CHoCH", minval=2, maxval=5, group=group_smc)
+
+// Confirmation Filter Settings
+group_confirm = "Confirmation Filters (REQUIRED)"
+ema10_len = input.int(10, "EMA Fast Length", minval=5, maxval=50, group=group_confirm)
+ema21_len = input.int(21, "EMA Medium Length", minval=10, maxval=100, group=group_confirm)
+min_atr_pips = input.float(10, "Min ATR (pips)", minval=5, maxval=50, group=group_confirm)
+max_atr_pips = input.float(50, "Max ATR (pips)", minval=20, maxval=200, group=group_confirm)
+min_volume_ratio = input.float(1.5, "Min Volume Ratio vs SMA", minval=1.0, maxval=3.0, group=group_confirm)
+max_4h_minutes_since_close = input.int(30, "Max minutes since 4H close", minval=5, maxval=240, group=group_confirm)
+
+// Display Settings
+group_display = "Display"
+show_s1_alerts = input(true, "Show Scenario 1 Signals", group=group_display)
+show_smc_alerts = input(true, "Show SMC/FVG Signals", group=group_display)
+show_fvg_boxes = input(true, "Show FVG Boxes", group=group_display)
+show_ema = input(true, "Show EMA Lines", group=group_display)
+show_vwap = input(true, "Show VWAP", group=group_display)
+show_confirmations = input(true, "Highlight Confirmed Entries", group=group_display)
+
+// ============================================================================
+// HELPER FUNCTIONS & CALCULATIONS
+// ============================================================================
+
+get_pip_value() =>
+    syminfo.mintick == 0.0001 ? 0.0001 : (syminfo.mintick == 0.01 ? 0.01 : 0.1)
+
+pip_value = get_pip_value()
+pips_to_price(pips) => pips * pip_value
+
+f_swing_high(len) =>
+    high[len] > high[len - 1] and high[len] > high[len + 1] and high[len] > high[len - 2] and high[len] > high[len + 2]
+
+f_swing_low(len) =>
+    low[len] < low[len - 1] and low[len] < low[len + 1] and low[len] < low[len - 2] and low[len] < low[len + 2]
+
+// 4H Candle Detection
+bars_per_4h = 240  // 4 hours × 60 minutes
+bar_index_in_4h = bar_index % bars_per_4h
+is_4h_close = bar_index_in_4h == 239  // Last bar of 4H candle
+bars_since_4h_close = bar_index_in_4h == 0 ? 0 : (240 - bar_index_in_4h)
+minutes_since_4h_close = bars_since_4h_close * 1  // 1-minute bars assumption
+
+// ============================================================================
+// CONFIRMATION FILTERS (C1-C5)
+// ============================================================================
+
+// C1: EMA Alignment
+ema10 = ta.ema(close, ema10_len)
+ema21 = ta.ema(close, ema21_len)
+ema_uptrend = ema10 > ema21
+ema_downtrend = ema10 < ema21
+ema_aligned_long = ema_uptrend
+ema_aligned_short = ema_downtrend
+ema_conflict_long = ema_downtrend  // EMA says short but signal is long
+ema_conflict_short = ema_uptrend   // EMA says long but signal is short
+
+// C2: VWAP (Volume-Weighted Average Price)
+cumulative_tp_vol = ta.cum(hl2 * volume)
+cumulative_vol = ta.cum(volume)
+vwap = cumulative_tp_vol / cumulative_vol
+price_above_vwap = close > vwap
+price_below_vwap = close < vwap
+vwap_confirmed_long = price_above_vwap
+vwap_confirmed_short = price_below_vwap
+
+// C3: Volume Confirmation
+vol_sma = ta.sma(volume, 20)
+volume_surge = volume > vol_sma * min_volume_ratio
+volume_confirmed = volume_surge
+
+// C4: ATR Volatility
+atr_val = ta.atr(14)
+atr_pips = atr_val / pip_value
+atr_safe_min = atr_pips > min_atr_pips
+atr_safe_max = atr_pips < max_atr_pips
+atr_valid = atr_safe_min and atr_safe_max
+
+// C5: 4H Candle Timing
+is_near_4h_close = minutes_since_4h_close <= max_4h_minutes_since_close
+candle_4h_valid = is_near_4h_close
+
+// COMBINED: All Confirmations Must Pass
+all_confirmations_pass = ema_aligned_long or ema_aligned_short  // At least trend alignment required
+long_fully_confirmed = ema_aligned_long and vwap_confirmed_long and volume_confirmed and atr_valid and candle_4h_valid
+short_fully_confirmed = ema_aligned_short and vwap_confirmed_short and volume_confirmed and atr_valid and candle_4h_valid
+
+// ============================================================================
+// SCENARIO 1: BREAKOUT/RETAP DETECTION
+// ============================================================================
+
+var float s1_recent_high = 0.0
+var float s1_recent_low = 0.0
+var bool s1_uptrend = false
+
+s1_high = ta.highest(high, lookback_s1)
+s1_low = ta.lowest(low, lookback_s1)
+
+if s1_recent_high == 0.0
+    s1_uptrend := close > ta.sma(close, 50)
+
+s1_recent_high := s1_high
+s1_recent_low := s1_low
+
+s1_breakout_long = close > (s1_recent_high + pips_to_price(breakout_pips)) and s1_uptrend
+s1_breakout_short = close < (s1_recent_low - pips_to_price(breakout_pips)) and not s1_uptrend
+s1_retap_long = close > (s1_recent_high - pips_to_price(retap_zone)) and close < s1_recent_high and s1_uptrend
+s1_retap_short = close < (s1_recent_low + pips_to_price(retap_zone)) and close > s1_recent_low and not s1_uptrend
+
+s1_alert_long = (s1_breakout_long or s1_retap_long)
+s1_alert_short = (s1_breakout_short or s1_retap_short)
+
+// Apply confirmation filter
+s1_confirmed_long = s1_alert_long and long_fully_confirmed
+s1_confirmed_short = s1_alert_short and short_fully_confirmed
+
+// ============================================================================
+// SMC/FVG: FAIR VALUE GAP DETECTION
+// ============================================================================
+
+fvg_bullish = low[1] > high[2] and (low[1] - high[2]) > pips_to_price(fvg_min_pips)
+fvg_bearish = high[1] < low[2] and (low[2] - high[1]) > pips_to_price(fvg_min_pips)
+
+var bool fvg_bullish_filled = false
+var bool fvg_bearish_filled = false
+
+if fvg_bullish
+    for i = 0 to fvg_lookback
+        if low[i] <= high[2]
+            fvg_bullish_filled := true
+            break
+
+if fvg_bearish
+    for i = 0 to fvg_lookback
+        if high[i] >= low[2]
+            fvg_bearish_filled := true
+            break
+
+smc_fvg_long = fvg_bullish and not fvg_bullish_filled
+smc_fvg_short = fvg_bearish and not fvg_bearish_filled
+
+// Apply confirmation filter
+smc_fvg_confirmed_long = smc_fvg_long and long_fully_confirmed
+smc_fvg_confirmed_short = smc_fvg_short and short_fully_confirmed
+
+// Draw FVG boxes
+if show_fvg_boxes and smc_fvg_long
+    box.new(bar_index[2], high[2], bar_index, low[1], border_color=color.purple, fill_color=color.new(color.purple, 85))
+
+if show_fvg_boxes and smc_fvg_short
+    box.new(bar_index[2], low[2], bar_index, high[1], border_color=color.red, fill_color=color.new(color.red, 85))
+
+// ============================================================================
+// SMC: LIQUIDITY SWEEP DETECTION
+// ============================================================================
+
+var float ls_swing_high = 0.0
+var float ls_swing_low = 0.0
+
+ls_swing_high := ta.highest(high, 20)
+ls_swing_low := ta.lowest(low, 20)
+
+ls_upswing_break = high > (ls_swing_high + pips_to_price(5)) and close < ls_swing_high
+ls_upswing_sweep = ls_upswing_break and volume > vol_sma * ls_volume_threshold
+
+ls_downswing_break = low < (ls_swing_low - pips_to_price(5)) and close > ls_swing_low
+ls_downswing_sweep = ls_downswing_break and volume > vol_sma * ls_volume_threshold
+
+smc_ls_long = ls_downswing_sweep
+smc_ls_short = ls_upswing_sweep
+
+// Apply confirmation filter
+smc_ls_confirmed_long = smc_ls_long and long_fully_confirmed
+smc_ls_confirmed_short = smc_ls_short and short_fully_confirmed
+
+// ============================================================================
+// SMC: CHANGE OF CHARACTER (CHoCH) DETECTION
+// ============================================================================
+
+var array<float> swing_highs = array.new<float>()
+var array<float> swing_lows = array.new<float>()
+
+if f_swing_high(2)
+    array.push(swing_highs, high[2])
+    if array.size(swing_highs) > 10
+        array.shift(swing_highs)
+
+if f_swing_low(2)
+    array.push(swing_lows, low[2])
+    if array.size(swing_lows) > 10
+        array.shift(swing_lows)
+
+var bool choch_long = false
+var bool choch_short = false
+
+if array.size(swing_lows) >= choch_swings_min
+    last_low = array.get(swing_lows, array.size(swing_lows) - 1)
+    choch_long := close < last_low and close[1] > last_low
+
+if array.size(swing_highs) >= choch_swings_min
+    last_high = array.get(swing_highs, array.size(swing_highs) - 1)
+    choch_short := close > last_high and close[1] < last_high
+
+// Apply confirmation filter
+choch_confirmed_long = choch_long and long_fully_confirmed
+choch_confirmed_short = choch_short and short_fully_confirmed
+
+// ============================================================================
+// COMBINED SMC SIGNALS
+// ============================================================================
+
+smc_alert_long = smc_fvg_long or smc_ls_long or choch_long
+smc_alert_short = smc_fvg_short or smc_ls_short or choch_short
+
+smc_confirmed_long = smc_fvg_confirmed_long or smc_ls_confirmed_long or choch_confirmed_long
+smc_confirmed_short = smc_fvg_confirmed_short or smc_ls_confirmed_short or choch_confirmed_short
+
+// ============================================================================
+// ALERT & VISUALIZATION
+// ============================================================================
+
+// S1 Alerts
+if s1_alert_long and show_s1_alerts
+    label_color = s1_confirmed_long ? color.green : color.blue
+    label.new(bar_index, high + atr_val * 2, "S1 LONG", color=label_color, style=label.style_label_down, textcolor=color.white, size=size.small)
+    alert("SCENARIO_1_LONG: " + syminfo.tickerid + " @ " + str.tostring(close, format.price), alert.freq_once_per_bar)
+
+if s1_alert_short and show_s1_alerts
+    label_color = s1_confirmed_short ? color.red : color.orange
+    label.new(bar_index, low - atr_val * 2, "S1 SHORT", color=label_color, style=label.style_label_up, textcolor=color.white, size=size.small)
+    alert("SCENARIO_1_SHORT: " + syminfo.tickerid + " @ " + str.tostring(close, format.price), alert.freq_once_per_bar)
+
+// SMC Alerts
+if smc_alert_long and show_smc_alerts
+    label_color = smc_confirmed_long ? color.new(color.lime, 0) : color.purple
+    label.new(bar_index, high + atr_val * 1, "SMC LONG", color=label_color, style=label.style_label_down, textcolor=color.white, size=size.small)
+    alert("SMC_FVG_LONG: " + syminfo.tickerid + " @ " + str.tostring(close, format.price), alert.freq_once_per_bar)
+
+if smc_alert_short and show_smc_alerts
+    label_color = smc_confirmed_short ? color.new(color.maroon, 0) : color.red
+    label.new(bar_index, low - atr_val * 1, "SMC SHORT", color=label_color, style=label.style_label_up, textcolor=color.white, size=size.small)
+    alert("SMC_FVG_SHORT: " + syminfo.tickerid + " @ " + str.tostring(close, format.price), alert.freq_once_per_bar)
+
+// EMA Lines
+if show_ema
+    plot(ema10, "EMA10", color=color.blue, linewidth=1)
+    plot(ema21, "EMA21", color=color.orange, linewidth=1)
+
+// VWAP
+if show_vwap
+    plot(vwap, "VWAP", color=color.gray, linewidth=1, style=plot.style_dashed)
+
+// Support/Resistance
+plot(s1_recent_high, "S1 Resistance", color=color.blue, linewidth=1, style=plot.style_linebr)
+plot(s1_recent_low, "S1 Support", color=color.blue, linewidth=1, style=plot.style_linebr)
+
+// Background shading
+bgcolor(smc_confirmed_long ? color.new(color.lime, 80) : smc_alert_long ? color.new(color.purple, 80) : na)
+bgcolor(smc_confirmed_short ? color.new(color.maroon, 80) : smc_alert_short ? color.new(color.red, 80) : na)
+bgcolor(s1_confirmed_long ? color.new(color.new(color.green, 50), 85) : s1_alert_long ? color.new(color.blue, 85) : na)
+bgcolor(s1_confirmed_short ? color.new(color.new(color.red, 50), 85) : s1_alert_short ? color.new(color.orange, 85) : na)
+
+// Debug Info
+debug_text =
+    "S1: " + (s1_confirmed_long ? "LONG✓" : s1_alert_long ? "LONG" : s1_confirmed_short ? "SHORT✓" : s1_alert_short ? "SHORT" : "—") +
+    " | SMC: " + (smc_confirmed_long ? "LONG✓" : smc_alert_long ? "LONG" : smc_confirmed_short ? "SHORT✓" : smc_alert_short ? "SHORT" : "—") +
+    " | EMA: " + (ema_uptrend ? "↑" : "↓") + " | ATR: " + str.tostring(atr_pips, "0.0") + "p | Vol: " + (volume_confirmed ? "✓" : "✗")
+
+var label debug_label = na
+label.delete(debug_label)
+debug_label := label.new(bar_index, high * 1.02, debug_text, color=color.gray, style=label.style_label_center, textcolor=color.white, size=size.tiny)
+
+// Confirmation status label (if enabled)
+if show_confirmations and (s1_confirmed_long or s1_confirmed_short or smc_confirmed_long or smc_confirmed_short)
+    status_text = "✓ CONFIRMED"
+    label.new(bar_index, high * 1.005, status_text, color=color.new(color.green, 0), style=label.style_label_center, textcolor=color.white, size=size.tiny)

@@ -22,18 +22,18 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const strategy = searchParams.get('strategy') || undefined;
     const symbol = searchParams.get('symbol') || undefined;
-    const since = searchParams.get('since') ? new Date(searchParams.get('since')!) : undefined;
-    const until = searchParams.get('until') ? new Date(searchParams.get('until')!) : undefined;
+    const sinceStr = searchParams.get('since') || undefined;
+    const untilStr = searchParams.get('until') || undefined;
     const format = searchParams.get('format') || 'csv';
 
-    console.log(`📊 Exporting backtest data: strategy=${strategy}, symbol=${symbol}, since=${since}, until=${until}, format=${format}`);
+    console.log(`📊 Exporting backtest data: strategy=${strategy}, symbol=${symbol}, since=${sinceStr}, until=${untilStr}, format=${format}`);
 
     // Query trades from database
     let trades = dbOps.getTradeHistory({
       symbol,
-      strategy,
-      since,
-      until,
+      status: undefined,
+      since: sinceStr,
+      until: untilStr,
     });
 
     // Filter by status (only completed trades)
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
           status: 'ok',
           count: 0,
           trades: [],
-          filters: { strategy, symbol, since, until },
+          filters: { strategy, symbol, since: sinceStr, until: untilStr },
           message: 'No trades found matching the criteria',
         });
       }
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
           strategy: t.strategy,
           status: t.status,
         })),
-        filters: { strategy, symbol, since, until },
+        filters: { strategy, symbol, since: sinceStr, until: untilStr },
         statistics: {
           total_trades: trades.length,
           wins: trades.filter(t => t.pnl > 0).length,

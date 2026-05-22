@@ -14,6 +14,14 @@ const TradeAlertSchema = z.object({
   retap_level: z.number().positive().optional(),
   risk_amount: z.number().positive().optional(),
   scenario: z.string().optional(),
+  // Chart confirmation data from Pine Script (optional)
+  ema10: z.number().optional(),
+  ema21: z.number().optional(),
+  vwap: z.number().optional(),
+  volume: z.number().positive().optional(),
+  volume_avg: z.number().positive().optional(),
+  atr: z.number().positive().optional(),
+  minutes_since_4h_close: z.number().nonnegative().optional(),
 });
 
 type TradeAlert = z.infer<typeof TradeAlertSchema>;
@@ -129,7 +137,7 @@ export async function POST(request: NextRequest) {
     const tradeId = randomUUID();
 
     try {
-      const validationResult = await validateTrade({
+      const tradeContext = {
         symbol: alert.symbol,
         direction: alert.direction as 'long' | 'short',
         entryLevel: alert.entry_level,
@@ -137,10 +145,20 @@ export async function POST(request: NextRequest) {
         stopLevel: alert.stop_level,
         createdAt: new Date(),
         candle4hClosed: true, // In real scenario, check chart
-      });
+        // Chart confirmation data from Pine Script
+        ema10: alert.ema10,
+        ema21: alert.ema21,
+        vwap: alert.vwap,
+        volume: alert.volume,
+        volumeAvg: alert.volume_avg,
+        atr: alert.atr,
+        minutesSince4hClose: alert.minutes_since_4h_close,
+      };
 
-      // Log validation result
-      await logValidation(tradeId, alert.symbol, validationResult);
+      const validationResult = await validateTrade(tradeContext);
+
+      // Log validation result with context
+      await logValidation(tradeId, alert.symbol, alert.direction, validationResult, tradeContext);
 
       // If validation fails, REJECT the trade
       if (!validationResult.isValid) {
