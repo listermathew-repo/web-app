@@ -1,5 +1,10 @@
 import WikiLayout from "@/components/WikiLayout";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const TradeExecutionMonitor = dynamic(() => import("@/components/TradeExecutionMonitor"), {
+  loading: () => <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-400">Loading trade data...</div>,
+});
 
 const todayChecklist = [
   { id: 1, label: "Watch morning video — write Scenario 1 bias", field: "Pair / direction / BASE level" },
@@ -49,6 +54,11 @@ export default function DashboardPage() {
             <p className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Live Trade Execution Monitor */}
+      <div className="mb-8">
+        <TradeExecutionMonitor />
       </div>
 
       {/* Today's Checklist */}

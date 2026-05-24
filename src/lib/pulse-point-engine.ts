@@ -23,8 +23,8 @@ const PEAK_WINDOW = { START: 14, END: 16 }; // 14:00-16:00 ADL (2pm-4pm)
 
 // FVG Detection thresholds
 const FVG_MIN_GAPS = {
-  BTCUSD: { 15M: 50, 1H: 120 },  // pips
-  EURUSD: { 15M: 15, 1H: 40 },   // pips
+  BTCUSD: { '15M': 50, '1H': 120 },  // pips
+  EURUSD: { '15M': 15, '1H': 40 },   // pips
 };
 
 // Risk/Reward Configuration (per backtest validation)
@@ -242,7 +242,7 @@ class PulsePointEngine {
     // Return price ranges of detected FVGs
 
     // Mock FVG detections based on trend direction
-    const fvgs = [];
+    const fvgs: Array<{ high: number; low: number; type: 'bullish' | 'bearish' }> = [];
 
     if (trend.direction === 'short') {
       // Bearish FVG: High of bar1 > Low of bar3, creates gap
@@ -376,11 +376,9 @@ class PulsePointEngine {
       score += 10; // RSI in favor of direction
     }
 
-    // VWAP alignment
-    if (isLong && entry15M.close > entry15M.vwap) {
-      score += 5;
-    } else if (!isLong && entry15M.close < entry15M.vwap) {
-      score += 5;
+    // EMA alignment with VWAP (proxy for price alignment)
+    if ((isLong && entry15M.ema10 > entry15M.ema21) || (!isLong && entry15M.ema10 < entry15M.ema21)) {
+      score += 5; // EMA showing proper trend structure
     }
 
     return Math.min(score, 100);
@@ -426,8 +424,6 @@ Risk: $${setup.riskAmount} | Reward: $${setup.rewardAmount} | R:R: ${setup.rRati
         retap_level: setup.retapLevel,
         risk_amount: setup.riskAmount,
         scenario: `FVG ${setup.direction} | 4H:${setup.trend4H.direction} 1H:${setup.setup1H.direction} 15M:${setup.entry15M.direction}`,
-        created_at: setup.timestamp,
-        status: 'pending',
       });
 
       console.log(`[QUEUE] Setup queued for approval: ${setup.id}`);
@@ -492,4 +488,5 @@ export function getPulsePointEngine(): PulsePointEngine {
   return engineInstance;
 }
 
-export { PulsePointEngine, FVGSetup, TrendAnalysis };
+export { PulsePointEngine };
+export type { FVGSetup, TrendAnalysis };

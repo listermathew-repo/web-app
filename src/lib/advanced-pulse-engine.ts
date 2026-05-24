@@ -306,13 +306,13 @@ class AdvancedPulseEngine {
 
       if (entryCandelConfirmed) {
         setup.stage = 'trigger_ready';
-        setup.stageTimestamps.precision_3m = new Date().toISOString();
+        setup.stageTimestamps.precision_pending = new Date().toISOString();
         setup.stageTimestamps.trigger_ready = new Date().toISOString();
         setup.confidence.precision_3m = 85 + strength * 10; // 85-100
 
         // Last 2 stages: need 2M + 1M confirmation before executing
         await sendAlert(
-          'critical',
+          'warning',
           `🎯 3M ENTRY CANDLE CONFIRMED! - ${setup.symbol} | STANDBY for 2M/1M final confirmation | Will execute within 1-2 minutes`
         );
 
@@ -560,7 +560,7 @@ class AdvancedPulseEngine {
       confidence: { initial_15m: confluenceScore },
       analysis: {
         tf_4h: { direction: tf4H.direction, strength: 0.8, ema10: tf4H.ema10, ema21: tf4H.ema21 },
-        tf_1h: { direction: tf1H.direction, strength: 0.6, fvg_type: fvg.type },
+        tf_1h: { direction: tf1H.direction, strength: 0.6, fvg_type: (fvg.type as 'bullish' | 'bearish') },
         tf_15m: { pullback_confirmed: true, entry_structure: 'valid' },
       },
       riskAmount: 350,
@@ -601,8 +601,6 @@ Review & approve in dashboard to begin progression through stages:
         retap_level: setup.retapLevel,
         risk_amount: setup.riskAmount,
         scenario: `FVG ${setup.direction} - Stage 1 Detected (${setup.confidence.initial_15m}/100)`,
-        created_at: setup.timestamp,
-        status: 'pending',
       });
     } catch (error) {
       console.error('[QUEUE] Failed to queue setup:', error);
@@ -669,4 +667,5 @@ export function getAdvancedPulseEngine(): AdvancedPulseEngine {
   return engineInstance;
 }
 
-export { AdvancedPulseEngine, StagedSetup, ConfirmationStage };
+export { AdvancedPulseEngine };
+export type { StagedSetup, ConfirmationStage };
