@@ -115,6 +115,29 @@ export function initializeDatabase() {
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
 
+    `CREATE TABLE IF NOT EXISTS validation_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trade_id TEXT UNIQUE,
+      symbol TEXT NOT NULL,
+      direction TEXT NOT NULL,
+      ema10 REAL,
+      ema21 REAL,
+      ema_aligned BOOLEAN,
+      price REAL,
+      vwap REAL,
+      price_above_vwap BOOLEAN,
+      volume REAL,
+      volume_avg REAL,
+      volume_confirmed BOOLEAN,
+      atr REAL,
+      atr_valid BOOLEAN,
+      candle_4h_minutes_since_close INTEGER,
+      candle_4h_valid BOOLEAN,
+      overall_valid BOOLEAN,
+      rejection_reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+
     `CREATE INDEX IF NOT EXISTS idx_pending_trades_symbol ON pending_trades(symbol)`,
     `CREATE INDEX IF NOT EXISTS idx_pending_trades_status ON pending_trades(status)`,
     `CREATE INDEX IF NOT EXISTS idx_pending_trades_created_at ON pending_trades(created_at)`,
@@ -123,6 +146,9 @@ export function initializeDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_trades_created_at ON trades(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_alert_log_symbol ON alert_log(symbol)`,
     `CREATE INDEX IF NOT EXISTS idx_alert_log_timestamp ON alert_log(timestamp)`,
+    `CREATE INDEX IF NOT EXISTS idx_validation_log_trade_id ON validation_log(trade_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_validation_log_symbol ON validation_log(symbol)`,
+    `CREATE INDEX IF NOT EXISTS idx_validation_log_created_at ON validation_log(created_at)`,
   ];
 
   try {
@@ -304,6 +330,93 @@ export const dbOps = {
     return all(sql);
   },
 
+  // Validation log
+  logValidationResult: (validation: {
+    trade_id: string;
+    symbol: string;
+    direction: string;
+    ema10?: number;
+    ema21?: number;
+    ema_aligned?: boolean;
+    price?: number;
+    vwap?: number;
+    price_above_vwap?: boolean;
+    volume?: number;
+    volume_avg?: number;
+    volume_confirmed?: boolean;
+    atr?: number;
+    atr_valid?: boolean;
+    candle_4h_minutes_since_close?: number;
+    candle_4h_valid?: boolean;
+    overall_valid: boolean;
+    rejection_reason?: string;
+  }) => {
+    const sql = `
+      INSERT INTO validation_log
+      (trade_id, symbol, direction, ema10, ema21, ema_aligned, price, vwap, price_above_vwap,
+       volume, volume_avg, volume_confirmed, atr, atr_valid, candle_4h_minutes_since_close,
+       candle_4h_valid, overall_valid, rejection_reason)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    return run(sql, [
+      validation.trade_id,
+      validation.symbol,
+      validation.direction,
+      validation.ema10,
+      validation.ema21,
+      validation.ema_aligned,
+      validation.price,
+      validation.vwap,
+      validation.price_above_vwap,
+      validation.volume,
+      validation.volume_avg,
+      validation.volume_confirmed,
+      validation.atr,
+      validation.atr_valid,
+      validation.candle_4h_minutes_since_close,
+      validation.candle_4h_valid,
+      validation.overall_valid ? 1 : 0,
+      validation.rejection_reason,
+    ]);
+  },
+
+  // Query validation log for a trade
+  getValidationLog: (tradeId: string) => {
+    const sql = 'SELECT * FROM validation_log WHERE trade_id = ? LIMIT 1';
+    return get(sql, [tradeId]);
+  },
+
+  // Store rule evaluation on trade
+  storeRuleEvaluation: (tradeId: string, ruleEvaluation: any) => {
+    const sql = `
+      UPDATE trades
+      SET
+        rule_version = ?,
+        rule_conditions_met = ?,
+        pre_entry_checks = ?
+      WHERE id = ?
+    `;
+    return run(sql, [
+      ruleEvaluation.rule_version,
+      JSON.stringify(ruleEvaluation.conditions_evaluated),
+      JSON.stringify(ruleEvaluation.pre_entry_checks),
+      tradeId,
+    ]);
+  },
+
+  // Get rule evaluation for a trade
+  getRuleEvaluation: (tradeId: string) => {
+    const sql = `
+      SELECT
+        rule_version,
+        rule_conditions_met,
+        pre_entry_checks
+      FROM trades
+      WHERE id = ?
+    `;
+    return get(sql, [tradeId]);
+  },
+
   // Cleanup
   autoCleanupExpiredTrades: () => {
     const sql = `
@@ -312,6 +425,144 @@ export const dbOps = {
       WHERE status = 'pending' AND created_at < datetime('now', '-5 minutes')
     `;
     return run(sql);
+  },
+
+  // Backtest results
+  insertBacktestResult: (result: {
+    month: string;
+    instrument: string;
+    trades: number;
+    winRate: number;
+    totalRisk: number;
+    expectedWins: number;
+    expectedLoss: number;
+    netPnL: number;
+    roi: number;
+    riskPerTrade: number;
+    timestamp: string;
+  }) => {
+    // Create backtest_results table if not exists
+    getDatabase().exec(`
+      CREATE TABLE IF NOT EXISTS backtest_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        month TEXT NOT NULL,
+        instrument TEXT NOT NULL,
+        trades INTEGER NOT NULL,
+        win_rate REAL NOT NULL,
+        total_risk REAL NOT NULL,
+        expected_wins REAL NOT NULL,
+        expected_loss REAL NOT NULL,
+        net_pnl REAL NOT NULL,
+        roi REAL NOT NULL,
+        risk_per_trade INTEGER NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const sql = `
+      INSERT INTO backtest_results
+      (month, instrument, trades, win_rate, total_risk, expected_wins, expected_loss, net_pnl, roi, risk_per_trade, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    return run(sql, [
+      result.month,
+      result.instrument,
+      result.trades,
+      result.winRate,
+      result.totalRisk,
+      result.expectedWins,
+      result.expectedLoss,
+      result.netPnL,
+      result.roi,
+      result.riskPerTrade,
+      result.timestamp,
+    ]);
+  },
+
+  getBacktestResults: (params: { riskPerTrade: number; months?: string[] }) => {
+    let sql = `
+      SELECT
+        month,
+        instrument,
+        trades,
+        win_rate as winRate,
+        total_risk as totalRisk,
+        expected_wins as expectedWins,
+        expected_loss as expectedLoss,
+        net_pnl as netPnL,
+        roi,
+        risk_per_trade as riskPerTrade
+      FROM backtest_results
+      WHERE risk_per_trade = ?
+    `;
+
+    const queryParams: any[] = [params.riskPerTrade];
+
+    if (params.months && params.months.length > 0) {
+      const placeholders = params.months.map(() => '?').join(',');
+      sql += ` AND month IN (${placeholders})`;
+      queryParams.push(...params.months);
+    }
+
+    sql += ` ORDER BY month`;
+
+    const stmt = getDatabase().prepare(sql);
+    const results = stmt.all(...queryParams);
+    return results as Array<{
+      month: string;
+      instrument: string;
+      trades: number;
+      winRate: number;
+      totalRisk: number;
+      expectedWins: number;
+      expectedLoss: number;
+      netPnL: number;
+      roi: number;
+      riskPerTrade: number;
+    }>;
+  },
+
+  getBacktestSummary: (params: { riskPerTrade: number; period?: '4month' | 'february' | 'march' | 'april' | 'may' }) => {
+    let months: string[] = ['FEB', 'MAR', 'APR', 'MAY'];
+
+    if (params.period && params.period !== '4month') {
+      const monthMap: Record<string, string> = {
+        february: 'FEB',
+        march: 'MAR',
+        april: 'APR',
+        may: 'MAY',
+      };
+      months = [monthMap[params.period] || 'APR'];
+    }
+
+    const results = dbOps.getBacktestResults({
+      riskPerTrade: params.riskPerTrade,
+      months,
+    });
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const totalNetPnL = results.reduce((sum, r) => sum + r.netPnL, 0);
+    const totalRisk = results.reduce((sum, r) => sum + r.totalRisk, 0);
+    const totalROI = totalRisk > 0 ? totalNetPnL / totalRisk : 0;
+    const averageMonthlyPnL = totalNetPnL / results.length;
+
+    const sorted = [...results].sort((a, b) => b.netPnL - a.netPnL);
+
+    return {
+      totalNetPnL,
+      totalROI,
+      averageMonthlyPnL,
+      bestMonth: sorted[0]?.month || 'N/A',
+      bestMonthPnL: sorted[0]?.netPnL || 0,
+      worstMonth: sorted[sorted.length - 1]?.month || 'N/A',
+      worstMonthPnL: sorted[sorted.length - 1]?.netPnL || 0,
+      totalTrades: results.reduce((sum, r) => sum + r.trades, 0),
+      averageWinRate: results.reduce((sum, r) => sum + r.winRate, 0) / results.length,
+    };
   },
 };
 

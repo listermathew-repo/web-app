@@ -6,10 +6,12 @@ import { randomUUID } from 'crypto';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  let id = 'UNKNOWN';
   try {
-    const { id } = params;
+    const paramData = await params;
+    id = paramData.id;
 
     // 0. Authenticate with X-API-Key header
     const apiKey = request.headers.get('X-API-Key');
@@ -167,15 +169,20 @@ export async function POST(
   } catch (error) {
     console.error('Approval endpoint error:', error);
 
-    // Send error alert
-    await sendMultiChannelAlert({
-      symbol: params.id || 'UNKNOWN',
-      level: 'triggered',
-      currentPrice: 0,
-      stopLoss: 0,
-      timestamp: new Date(),
-      severity: 'critical',
-    }).catch(() => null); // Ignore alert errors
+    // Send error alert (id is in scope from top of function)
+    // Note: if error occurs before id is destructured, this may fail - wrap in try-catch
+    try {
+      await sendMultiChannelAlert({
+        symbol: id || 'UNKNOWN',
+        level: 'triggered',
+        currentPrice: 0,
+        stopLoss: 0,
+        timestamp: new Date(),
+        severity: 'critical',
+      }).catch(() => null);
+    } catch (alertError) {
+      console.error('Failed to send alert:', alertError);
+    }
 
     return NextResponse.json(
       {

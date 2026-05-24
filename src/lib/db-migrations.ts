@@ -4,6 +4,7 @@
  */
 
 import Database from 'better-sqlite3';
+import { migrateToV2 } from './db-schema-v2';
 
 export function migrateToStrategyTracking(db: Database.Database): void {
   console.log('Running migration: Add strategy tracking columns...');
@@ -161,6 +162,7 @@ export function runAllMigrations(db: Database.Database): void {
   migrateToStrategyTracking(db);
   migrateCreateRRAnalysisTable(db);
   migrateCreateBacktestResultsTable(db);
+  migrateToV2(db);
 
   console.log('\n✅ All migrations completed\n');
 }

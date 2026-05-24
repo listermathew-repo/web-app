@@ -1,16 +1,56 @@
 /**
- * ntfy.sh alert utility
+ * ntfy.sh alert utility with error codes
  * Sends notifications to https://ntfy.sh/mgm-7k4x-live
  */
 
 export type AlertType = 'success' | 'error' | 'warning' | 'info';
 
+// Error codes for structured error tracking
+export const ERROR_CODES = {
+  // Authentication errors (4xx)
+  UNAUTHORIZED: { code: 'ERR_401', status: 401, message: 'Unauthorized - Invalid or missing API key' },
+  INVALID_API_KEY: { code: 'ERR_401_1', status: 401, message: 'Invalid API key provided' },
+
+  // Validation errors (4xx)
+  INVALID_SCHEMA: { code: 'ERR_400_1', status: 400, message: 'Request body fails validation schema' },
+  INVALID_SYMBOL: { code: 'ERR_400_2', status: 400, message: 'Invalid symbol format' },
+  INVALID_DIRECTION: { code: 'ERR_400_3', status: 400, message: 'Invalid direction (must be long/short)' },
+  INVALID_ENTRY_LEVEL: { code: 'ERR_400_4', status: 400, message: 'Entry level invalid (must be positive)' },
+  MALFORMED_JSON: { code: 'ERR_400_5', status: 400, message: 'Malformed JSON in request body' },
+
+  // Rate limiting (429)
+  RATE_LIMIT_EXCEEDED: { code: 'ERR_429_1', status: 429, message: 'Too many requests - rate limit exceeded' },
+  DUPLICATE_TRADE: { code: 'ERR_429_2', status: 429, message: 'Duplicate trade detected within 30 seconds' },
+
+  // Database errors (500)
+  DATABASE_ERROR: { code: 'ERR_500_1', status: 500, message: 'Database operation failed' },
+  DUPLICATE_CHECK_FAILED: { code: 'ERR_500_2', status: 500, message: 'Failed to check for duplicates' },
+  INSERT_FAILED: { code: 'ERR_500_3', status: 500, message: 'Failed to insert trade into database' },
+
+  // Trade validation errors (4xx)
+  TRADE_VALIDATION_FAILED: { code: 'ERR_400_6', status: 400, message: 'Trade failed validation against rules' },
+  VALIDATION_ERROR: { code: 'ERR_500_4', status: 500, message: 'Unexpected error during validation' },
+
+  // System errors (500)
+  INTERNAL_SERVER_ERROR: { code: 'ERR_500_5', status: 500, message: 'Internal server error' },
+  UNEXPECTED_ERROR: { code: 'ERR_500_6', status: 500, message: 'Unexpected error' },
+
+  // Capital.com errors (5xx)
+  CAPITAL_API_ERROR: { code: 'ERR_503_1', status: 503, message: 'Capital.com API unavailable' },
+  CAPITAL_AUTH_ERROR: { code: 'ERR_503_2', status: 503, message: 'Capital.com authentication failed' },
+
+  // Health check errors (5xx)
+  HEALTH_CHECK_FAILED: { code: 'ERR_503_3', status: 503, message: 'Health check failed' },
+};
+
 interface AlertOptions {
   type: AlertType;
   message: string;
+  errorCode?: string;
   title?: string;
   details?: Record<string, any>;
   timestamp?: boolean;
+  requestId?: string;
 }
 
 const NTFY_URL = 'https://ntfy.sh/mgm-7k4x-live';
@@ -32,24 +72,55 @@ const EMOJI_MAP: Record<AlertType, string> = {
 };
 
 /**
- * Send alert to ntfy.sh
+ * Send alert to ntfy.sh with full context
  */
-export async function sendAlert(type: AlertType, message: string, details?: Record<string, any>) {
+export async function sendAlert(
+  type: AlertType,
+  message: string,
+  options?: {
+    details?: Record<string, any>;
+    errorCode?: string;
+    requestId?: string;
+    timestamp?: boolean;
+  }
+) {
   try {
     const priority = PRIORITY_MAP[type];
     const emoji = EMOJI_MAP[type];
-    const timestamp = new Date().toLocaleTimeString('en-AU', { timeZone: 'Australia/Adelaide' });
+    const adlTime = new Date().toLocaleTimeString('en-AU', { timeZone: 'Australia/Adelaide' });
 
-    // Format the title
-    const title = `[${type.toUpperCase()}] ${timestamp} ADL`;
+    // Format the title with error code if present
+    let title = `[${type.toUpperCase()}] ${adlTime} ADL`;
+    if (options?.errorCode) {
+      title = `${emoji} ${options.errorCode} - ${adlTime} ADL`;
+    }
 
-    // Build the body
+    // Build the body with structured context
     let body = message;
-    if (details) {
-      body += '\n\n---\n';
-      body += Object.entries(details)
-        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+
+    // Add request ID if present
+    if (options?.requestId) {
+      body += `\nRequest ID: ${options.requestId}`;
+    }
+
+    // Add details if present
+    if (options?.details && Object.keys(options.details).length > 0) {
+      body += '\n\n--- Context ---\n';
+      body += Object.entries(options.details)
+        .filter(([, value]) => value !== null && value !== undefined)
+        .map(([key, value]) => {
+          const v = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+          return `${key}: ${v}`;
+        })
         .join('\n');
+    }
+
+    // Add system info for errors
+    if (type === 'error') {
+      const memUsage = process.memoryUsage();
+      body += '\n\n--- System ---\n';
+      body += `Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB/${Math.round(memUsage.heapTotal / 1024 / 1024)}MB\n`;
+      body += `Uptime: ${Math.round(process.uptime())}s`;
     }
 
     // Send to ntfy
@@ -59,19 +130,20 @@ export async function sendAlert(type: AlertType, message: string, details?: Reco
         'Title': title,
         'Priority': priority.toString(),
         'Content-Type': 'text/plain; charset=utf-8',
+        'Tags': options?.errorCode ? 'error,alert' : 'info',
       },
       body: body,
     });
 
     if (!response.ok) {
-      console.error(`Failed to send alert: ${response.status} ${response.statusText}`);
+      console.error(`[ALERT] Failed to send (${response.status}): ${message}`);
       return false;
     }
 
-    console.log(`Alert sent (${type}): ${message}`);
+    console.log(`[ALERT] Sent (${type}${options?.errorCode ? ` ${options.errorCode}` : ''}): ${message.substring(0, 80)}`);
     return true;
   } catch (error) {
-    console.error('Failed to send alert:', error);
+    console.error('[ALERT] Send error:', error);
     return false;
   }
 }

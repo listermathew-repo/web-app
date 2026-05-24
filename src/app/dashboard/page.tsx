@@ -10,6 +10,7 @@ interface PendingTrade {
   stopLevel: number;
   createdAt: string;
   expiresAt: string;
+  scenario?: string;
 }
 
 interface OpenPosition {
@@ -21,6 +22,7 @@ interface OpenPosition {
   profitLoss: number;
   profitLossPercent: number;
   size: number;
+  strategy?: string;
 }
 
 interface Alert {
@@ -32,24 +34,55 @@ interface Alert {
   priority: number;
 }
 
+interface StrategyStats {
+  name: string;
+  totalTrades: number;
+  winnersCount: number;
+  losersCount: number;
+  totalPnL: number;
+  winRate: number;
+  color: string;
+}
+
 interface DailyStats {
   totalTrades: number;
   winnersCount: number;
   losersCount: number;
   totalPnL: number;
   winRate: number;
+  scenario1: StrategyStats;
+  smcfvg: StrategyStats;
 }
 
 export default function DashboardPage() {
   const [pendingTrades, setPendingTrades] = useState<PendingTrade[]>([]);
   const [openPositions, setOpenPositions] = useState<OpenPosition[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [strategyFilter, setStrategyFilter] = useState<'all' | 'scenario_1' | 'smcfvg'>('all');
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     totalTrades: 0,
     winnersCount: 0,
     losersCount: 0,
     totalPnL: 0,
     winRate: 0,
+    scenario1: {
+      name: 'Scenario 1',
+      totalTrades: 0,
+      winnersCount: 0,
+      losersCount: 0,
+      totalPnL: 0,
+      winRate: 0,
+      color: 'blue',
+    },
+    smcfvg: {
+      name: 'SMC/FVG',
+      totalTrades: 0,
+      winnersCount: 0,
+      losersCount: 0,
+      totalPnL: 0,
+      winRate: 0,
+      color: 'purple',
+    },
   });
   const [loading, setLoading] = useState(true);
 
@@ -72,12 +105,38 @@ export default function DashboardPage() {
         const winnersCount = openPositions.filter((pos) => pos.profitLoss > 0).length;
         const losersCount = openPositions.filter((pos) => pos.profitLoss < 0).length;
 
+        // Calculate strategy-specific stats
+        const scenario1Positions = openPositions.filter((pos) => !pos.strategy || pos.strategy === 'scenario_1');
+        const smcfvgPositions = openPositions.filter((pos) => pos.strategy === 'smcfvg');
+
+        const scenario1Stats = {
+          name: 'Scenario 1',
+          totalTrades: scenario1Positions.length,
+          winnersCount: scenario1Positions.filter((pos) => pos.profitLoss > 0).length,
+          losersCount: scenario1Positions.filter((pos) => pos.profitLoss < 0).length,
+          totalPnL: scenario1Positions.reduce((sum, pos) => sum + pos.profitLoss, 0),
+          winRate: scenario1Positions.length > 0 ? (scenario1Positions.filter((pos) => pos.profitLoss > 0).length / scenario1Positions.length) * 100 : 0,
+          color: 'blue',
+        };
+
+        const smcfvgStats = {
+          name: 'SMC/FVG',
+          totalTrades: smcfvgPositions.length,
+          winnersCount: smcfvgPositions.filter((pos) => pos.profitLoss > 0).length,
+          losersCount: smcfvgPositions.filter((pos) => pos.profitLoss < 0).length,
+          totalPnL: smcfvgPositions.reduce((sum, pos) => sum + pos.profitLoss, 0),
+          winRate: smcfvgPositions.length > 0 ? (smcfvgPositions.filter((pos) => pos.profitLoss > 0).length / smcfvgPositions.length) * 100 : 0,
+          color: 'purple',
+        };
+
         setDailyStats({
           totalTrades,
           winnersCount,
           losersCount,
           totalPnL,
           winRate: totalTrades > 0 ? (winnersCount / totalTrades) * 100 : 0,
+          scenario1: scenario1Stats,
+          smcfvg: smcfvgStats,
         });
 
         setLoading(false);
@@ -127,9 +186,104 @@ export default function DashboardPage() {
     );
   }
 
+  // Filter trades and positions based on selected strategy
+  const filteredPendingTrades = strategyFilter === 'all'
+    ? pendingTrades
+    : pendingTrades.filter(t => (t.scenario || 'scenario_1') === strategyFilter);
+
+  const filteredOpenPositions = strategyFilter === 'all'
+    ? openPositions
+    : openPositions.filter(p => (p.strategy || 'scenario_1') === strategyFilter);
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <h1 className="text-4xl font-bold mb-8">📊 Trading Dashboard</h1>
+
+      {/* STRATEGY FILTER BUTTONS */}
+      <div className="mb-6 flex gap-3">
+        <button
+          onClick={() => setStrategyFilter('all')}
+          className={`px-4 py-2 rounded font-bold transition ${
+            strategyFilter === 'all'
+              ? 'bg-gray-100 text-gray-900'
+              : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+        >
+          📊 All Strategies
+        </button>
+        <button
+          onClick={() => setStrategyFilter('scenario_1')}
+          className={`px-4 py-2 rounded font-bold transition ${
+            strategyFilter === 'scenario_1'
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+        >
+          🔵 Scenario 1
+        </button>
+        <button
+          onClick={() => setStrategyFilter('smcfvg')}
+          className={`px-4 py-2 rounded font-bold transition ${
+            strategyFilter === 'smcfvg'
+              ? 'bg-purple-500 text-white'
+              : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+        >
+          🟣 SMC/FVG
+        </button>
+      </div>
+
+      {/* STRATEGY COMPARISON STATS */}
+      {strategyFilter === 'all' && (
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4 border border-gray-700 rounded-lg p-4 bg-gray-800">
+          <div className="border-r border-gray-700 pr-4">
+            <h3 className="text-lg font-bold text-blue-400 mb-3">Scenario 1 Performance</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="text-gray-400">Trades</div>
+                <div className="text-2xl font-bold">{dailyStats.scenario1.totalTrades}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">Win Rate</div>
+                <div className="text-2xl font-bold text-green-400">{dailyStats.scenario1.winRate.toFixed(1)}%</div>
+              </div>
+              <div>
+                <div className="text-gray-400">W/L</div>
+                <div className="text-lg font-bold">{dailyStats.scenario1.winnersCount}/{dailyStats.scenario1.losersCount}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">P&L</div>
+                <div className={`text-lg font-bold ${dailyStats.scenario1.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ${dailyStats.scenario1.totalPnL.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="pl-4">
+            <h3 className="text-lg font-bold text-purple-400 mb-3">SMC/FVG Performance</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="text-gray-400">Trades</div>
+                <div className="text-2xl font-bold">{dailyStats.smcfvg.totalTrades}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">Win Rate</div>
+                <div className="text-2xl font-bold text-green-400">{dailyStats.smcfvg.winRate.toFixed(1)}%</div>
+              </div>
+              <div>
+                <div className="text-gray-400">W/L</div>
+                <div className="text-lg font-bold">{dailyStats.smcfvg.winnersCount}/{dailyStats.smcfvg.losersCount}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">P&L</div>
+                <div className={`text-lg font-bold ${dailyStats.smcfvg.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ${dailyStats.smcfvg.totalPnL.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DAILY STATS CARD */}
       <div className="grid grid-cols-4 gap-4 mb-8">
@@ -156,12 +310,12 @@ export default function DashboardPage() {
 
       {/* PENDING TRADES SECTION */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">🟡 Pending Trades ({pendingTrades.length})</h2>
-        {pendingTrades.length === 0 ? (
+        <h2 className="text-2xl font-bold mb-4">🟡 Pending Trades ({filteredPendingTrades.length})</h2>
+        {filteredPendingTrades.length === 0 ? (
           <div className="bg-gray-800 p-6 rounded-lg text-gray-400">No pending trades waiting for approval</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {pendingTrades.map((trade) => {
+            {filteredPendingTrades.map((trade) => {
               const timeRemaining = Math.max(
                 0,
                 Math.round((new Date(trade.expiresAt).getTime() - Date.now()) / 1000)
@@ -235,12 +389,16 @@ export default function DashboardPage() {
 
       {/* OPEN POSITIONS SECTION */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">📈 Open Positions ({openPositions.length})</h2>
-        {openPositions.length === 0 ? (
+        <h2 className="text-2xl font-bold mb-4">📈 Open Positions ({filteredOpenPositions.length})</h2>
+        {filteredOpenPositions.length === 0 ? (
           <div className="bg-gray-800 p-6 rounded-lg text-gray-400">No open positions</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {openPositions.map((pos) => (
+            {filteredOpenPositions.map((pos) => {
+              const strategyTag = pos.strategy === 'smcfvg' ? 'SMC/FVG' : 'Scenario 1';
+              const strategyColor = pos.strategy === 'smcfvg' ? 'purple' : 'blue';
+
+              return (
               <div
                 key={pos.symbol}
                 className={`border p-6 rounded-lg ${
@@ -250,7 +408,16 @@ export default function DashboardPage() {
                 }`}
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold">{pos.symbol}</h3>
+                  <div>
+                    <h3 className="text-xl font-bold">{pos.symbol}</h3>
+                    <div className={`text-xs font-bold mt-1 px-2 py-1 rounded inline-block ${
+                      strategyColor === 'purple'
+                        ? 'bg-purple-700 text-purple-100'
+                        : 'bg-blue-700 text-blue-100'
+                    }`}>
+                      📍 {strategyTag}
+                    </div>
+                  </div>
                   <div className={`px-3 py-1 rounded font-bold text-white ${
                     pos.direction === 'long' ? 'bg-green-600' : 'bg-red-600'
                   }`}>
@@ -284,7 +451,8 @@ export default function DashboardPage() {
                   <div className="text-sm mt-1">({pos.profitLossPercent.toFixed(2)}%)</div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

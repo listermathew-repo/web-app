@@ -1,0 +1,315 @@
+{
+  "version": "1.0",
+  "name": "4-Condition Entry System with Risk Management",
+  "effective_date": "2026-05-22",
+  "description": "VWAP-based entry system with EMA confirmation, RSI filter, and position/risk management rules",
+  "timezone": "ADL",
+
+  "entry_signals": {
+    "long_entry": {
+      "id": "long",
+      "description": "Buy signal - Bulls in control",
+      "conditions": [
+        {
+          "id": "price_vwap",
+          "name": "Price at VWAP",
+          "rule": "Price bounces off or holds above VWAP on the 4H",
+          "description": "Price must be at or within ±0.5 SD of VWAP",
+          "type": "price_level",
+          "parameters": {
+            "level": "VWAP",
+            "tolerance_sd": 0.5
+          }
+        },
+        {
+          "id": "rsi_band",
+          "name": "RSI Filter",
+          "rule": "RSI is between 40-60 (not overbought, room to run)",
+          "description": "RSI in neutral zone - not extreme",
+          "type": "oscillator",
+          "parameters": {
+            "indicator": "RSI",
+            "period": 14,
+            "min": 40,
+            "max": 60
+          }
+        },
+        {
+          "id": "ema_cross",
+          "name": "EMA Golden Cross",
+          "rule": "10 EMA > 21 EMA (Golden Cross - bullish ribbon)",
+          "description": "Short EMA above long EMA indicates bullish momentum",
+          "type": "moving_average",
+          "parameters": {
+            "fast_ema": 10,
+            "slow_ema": 21,
+            "condition": "fast_greater_than_slow"
+          }
+        },
+        {
+          "id": "cascade",
+          "name": "Price Cascade",
+          "rule": "Price is above 20 EMA on 4H (cascade confirms UP trend)",
+          "description": "Price must be above the 20 EMA (baseline trend confirmation)",
+          "type": "price_level",
+          "parameters": {
+            "ema_period": 20,
+            "condition": "price_above_ema"
+          }
+        }
+      ],
+      "confirmation": "All 4 conditions must be TRUE for a valid BUY signal",
+      "entry_price": "At VWAP or first pullback candle close above VWAP",
+      "targets": [
+        {
+          "level": 1,
+          "description": "Take 50% profit",
+          "price": "VWAP + 1 SD",
+          "size_percent": 50
+        },
+        {
+          "level": 2,
+          "description": "Take remaining 50%",
+          "price": "VWAP + 2 SD",
+          "size_percent": 50
+        }
+      ],
+      "stop_loss": {
+        "description": "Hard stop - exit immediately if hit",
+        "rule": "Below VWAP - 0.5 SD or below 20 EMA, whichever is lower",
+        "calculation": "MIN(VWAP - 0.5 SD, below 20 EMA)",
+        "no_exceptions": true
+      },
+      "risk_reward_minimum": 1.0,
+      "risk_reward_target": 2.0
+    },
+
+    "short_entry": {
+      "id": "short",
+      "description": "Sell signal - Bears in control",
+      "conditions": [
+        {
+          "id": "price_vwap",
+          "name": "Price at VWAP",
+          "rule": "Price rejects or breaks below VWAP on the 4H",
+          "description": "Price must be at or within ±0.5 SD of VWAP",
+          "type": "price_level",
+          "parameters": {
+            "level": "VWAP",
+            "tolerance_sd": 0.5
+          }
+        },
+        {
+          "id": "rsi_band",
+          "name": "RSI Filter",
+          "rule": "RSI is between 40-60 (not oversold, room to drop)",
+          "description": "RSI in neutral zone - not extreme",
+          "type": "oscillator",
+          "parameters": {
+            "indicator": "RSI",
+            "period": 14,
+            "min": 40,
+            "max": 60
+          }
+        },
+        {
+          "id": "ema_cross",
+          "name": "EMA Dead Cross",
+          "rule": "10 EMA < 21 EMA (Dead Cross - bearish ribbon)",
+          "description": "Short EMA below long EMA indicates bearish momentum",
+          "type": "moving_average",
+          "parameters": {
+            "fast_ema": 10,
+            "slow_ema": 21,
+            "condition": "fast_less_than_slow"
+          }
+        },
+        {
+          "id": "cascade",
+          "name": "Price Cascade",
+          "rule": "Price is below 20 EMA on 4H (cascade confirms DOWN trend)",
+          "description": "Price must be below the 20 EMA (baseline trend confirmation)",
+          "type": "price_level",
+          "parameters": {
+            "ema_period": 20,
+            "condition": "price_below_ema"
+          }
+        }
+      ],
+      "confirmation": "All 4 conditions must be TRUE for a valid SELL signal",
+      "entry_price": "At VWAP or first rejection candle close below VWAP",
+      "targets": [
+        {
+          "level": 1,
+          "description": "Take 50% profit",
+          "price": "VWAP - 1 SD",
+          "size_percent": 50
+        },
+        {
+          "level": 2,
+          "description": "Take remaining 50%",
+          "price": "VWAP - 2 SD",
+          "size_percent": 50
+        }
+      ],
+      "stop_loss": {
+        "description": "Hard stop - exit immediately if hit",
+        "rule": "Above VWAP + 0.5 SD or above 20 EMA, whichever is higher",
+        "calculation": "MAX(VWAP + 0.5 SD, above 20 EMA)",
+        "no_exceptions": true
+      },
+      "risk_reward_minimum": 1.0,
+      "risk_reward_target": 2.0
+    }
+  },
+
+  "pre_entry_checks": [
+    {
+      "id": "ny_open",
+      "name": "Avoid NY Open Volatility",
+      "description": "Is it NOT the first 15 minutes of NY Open?",
+      "rule": "Do not enter within 15 minutes of NY 08:00 EST",
+      "parameter": "minutes_after_ny_open",
+      "minimum_minutes": 15,
+      "severity": "hard"
+    },
+    {
+      "id": "position_limit",
+      "name": "Position Limit",
+      "description": "Do I have less than 2 open positions?",
+      "rule": "Maximum 2 concurrent open trades",
+      "parameter": "max_open_positions",
+      "maximum_positions": 2,
+      "severity": "hard"
+    },
+    {
+      "id": "risk_per_trade",
+      "name": "Risk Per Trade",
+      "description": "Is my risk per trade 0.25%-1% of account?",
+      "rule": "Size position so risk does not exceed 1% of account, minimum 0.25%",
+      "parameter": "risk_percentage",
+      "min_percent": 0.25,
+      "max_percent": 1.0,
+      "severity": "hard"
+    },
+    {
+      "id": "daily_loss_limit",
+      "name": "Daily Loss Limit",
+      "description": "Have I NOT had 2 losing trades today?",
+      "rule": "Stop trading after 2 consecutive losing trades in a day",
+      "parameter": "consecutive_losses",
+      "maximum_consecutive_losses": 2,
+      "severity": "hard"
+    },
+    {
+      "id": "daily_profit_cap",
+      "name": "Daily Profit Cap",
+      "description": "Am I within my daily profit cap?",
+      "rule": "Do not exceed daily profit target",
+      "parameter": "daily_profit_percent",
+      "target_profit_percent": 3.0,
+      "severity": "soft",
+      "note": "Suggested to close trading for the day once target is hit"
+    }
+  ],
+
+  "during_entry_checks": [
+    {
+      "id": "all_conditions",
+      "name": "All Entry Conditions",
+      "description": "All 4 entry conditions are TRUE?",
+      "rule": "Every condition must be confirmed before entry"
+    },
+    {
+      "id": "price_level",
+      "name": "Price at VWAP",
+      "description": "Is price at or near VWAP (within ±0.5 SD)?",
+      "tolerance": 0.5
+    },
+    {
+      "id": "rr_ratio",
+      "name": "Risk/Reward Ratio",
+      "description": "Am I using 1:2 minimum R:R ratio?",
+      "minimum_rr": 2.0
+    },
+    {
+      "id": "targets_set",
+      "name": "Targets Pre-Set",
+      "description": "Did I set stop and targets BEFORE entering?",
+      "rule": "Never enter without pre-defined exits"
+    }
+  ],
+
+  "during_trade_checks": [
+    {
+      "id": "stop_loss_set",
+      "name": "Stop Loss Confirmed",
+      "description": "Is my stop loss set at the exact price?",
+      "rule": "Verify stop is placed at exact level"
+    },
+    {
+      "id": "targets_set",
+      "name": "Targets Confirmed",
+      "description": "Are my targets set at exact prices?",
+      "rule": "Verify targets are placed at exact levels"
+    },
+    {
+      "id": "no_moving_stop",
+      "name": "Do Not Move Stop Early",
+      "description": "Am I NOT moving my stop into profit (yet)?",
+      "rule": "Let trade breathe - do not tighten stop until trade confirms"
+    },
+    {
+      "id": "exit_discipline",
+      "name": "Exit Discipline",
+      "description": "Am I ready to exit at targets, not hold for more?",
+      "rule": "Take profits as planned, no exceptions"
+    }
+  ],
+
+  "exit_rules": {
+    "take_profit": {
+      "id": "tp",
+      "name": "Take Profit at Targets",
+      "rule": "Exit at predetermined targets. Do not hold for more",
+      "severity": "hard",
+      "action": "Exit 50% at target 1, remaining 50% at target 2"
+    },
+    "stop_loss": {
+      "id": "sl",
+      "name": "Hard Stop Loss",
+      "rule": "Exit immediately if stop is hit. No exceptions",
+      "severity": "critical",
+      "action": "Exit entire position immediately"
+    },
+    "time_exit": {
+      "id": "time",
+      "name": "Time-Based Exit",
+      "rule": "If trade hasn't moved in 4 hours, exit at breakeven or VWAP",
+      "severity": "hard",
+      "parameter": "hours_no_movement",
+      "value": 4,
+      "action": "Exit at breakeven or VWAP"
+    },
+    "session_exit": {
+      "id": "session",
+      "name": "Session Close Exit",
+      "rule": "Close all positions 30 min before NY Close (2:30 PM NY time)",
+      "severity": "hard",
+      "timezone": "EST",
+      "exit_time": "14:30",
+      "action": "Exit all remaining positions",
+      "note": "Avoid overnight gaps and after-hours volatility"
+    }
+  },
+
+  "metadata": {
+    "author": "Trader",
+    "created_date": "2026-05-22",
+    "last_modified": "2026-05-22",
+    "instruments": ["EURUSD", "XAUUSD", "BTCUSD"],
+    "timeframe": "4H",
+    "trading_hours": "09:00-22:00 ADL",
+    "session": "Sydney, London, New York"
+  }
+}
