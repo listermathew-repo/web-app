@@ -1,6 +1,8 @@
 import WikiLayout from "@/components/WikiLayout";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import PendingTradesWidget from "@/components/PendingTradesWidget";
+import EconomicCalendar from "@/components/EconomicCalendar";
 
 const TradeExecutionMonitor = dynamic(() => import("@/components/TradeExecutionMonitor"), {
   loading: () => <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-400">Loading trade data...</div>,
@@ -54,6 +56,16 @@ export default function DashboardPage() {
             <p className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Pending Trades & Economic Calendar */}
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <PendingTradesWidget />
+        </div>
+        <div>
+          <EconomicCalendar />
+        </div>
       </div>
 
       {/* Live Trade Execution Monitor */}

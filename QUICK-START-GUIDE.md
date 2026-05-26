@@ -18,11 +18,13 @@ npm run dev
 # 3. In another terminal, run E2E test
 npm run test:e2e
 
-# ✅ Expected output:
+# ✅ Expected output (run between 09:00-22:00 ADL):
 # ✅ PASS: Health Check: All systems operational
 # ✅ PASS: Alert Webhook: Trade queued
 # ✅ PASS: Pending Queue List: Found X pending trade(s)
 # ✅ PASS: Trade Approval: Trade executed
+# ✅ PASS: Authentication: Successfully logged in
+# ✅ PASS: Backtest Export: Exported 0 trade(s)
 ```
 
 ---

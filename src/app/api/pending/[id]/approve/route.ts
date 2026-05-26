@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCapitalClient } from '@/lib/capital-client';
 import { dbOps } from '@/lib/db';
 import { sendMultiChannelAlert } from '@/lib/alerts-redundancy';
+import { isTradingPaused, getPauseStatus } from '@/lib/trading-pause';
 import { randomUUID } from 'crypto';
 
 export async function POST(
@@ -32,9 +33,40 @@ export async function POST(
       );
     }
 
+    // 1.5. Check if trading is paused due to high-impact economic events
+    const pauseStatus = isTradingPaused();
+    if (pauseStatus.isPaused) {
+      console.warn(`Trade approval blocked: ${pauseStatus.reason}`);
+
+      // Reject the trade due to pause
+      dbOps.rejectPendingTrade(id, `Trading paused: ${pauseStatus.reason}`);
+
+      await sendMultiChannelAlert({
+        symbol: pendingTrade.symbol,
+        level: 'triggered',
+        currentPrice: pendingTrade.entry_level,
+        stopLoss: pendingTrade.stop_level,
+        timestamp: new Date(),
+        severity: 'warning',
+      }).catch(() => null);
+
+      return NextResponse.json(
+        {
+          status: 'rejected',
+          trade_id: id,
+          symbol: pendingTrade.symbol,
+          reason: `⏸ Trading paused: ${pauseStatus.reason}`,
+          resumes_at: pauseStatus.resumesAt,
+          minutes_until_resume: pauseStatus.minutesUntilResume,
+        },
+        { status: 403 }
+      );
+    }
+
     // 2. Check if trade has expired (5-minute limit)
-    const expiresAt = new Date(pendingTrade.expires_at);
-    if (expiresAt < new Date()) {
+    // Use SQLite datetime comparison to avoid timezone issues
+    const isExpired = dbOps.isTradeExpired(id);
+    if (isExpired) {
       dbOps.rejectPendingTrade(id, 'Trade expired (>5 minutes)');
       await sendMultiChannelAlert({
         symbol: pendingTrade.symbol,

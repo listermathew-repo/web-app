@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/login", "/api/logout", "/api/alerts", "/api/health"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/login",
+  "/api/logout",
+  "/api/alerts",
+  "/api/health",
+  "/api/trades/monitor",  // Live trade monitoring dashboard
+  "/api/pending",         // Approval queue (authenticated via API key)
+  "/api/positions",       // Position tracking
+  "/api/pulse",           // Pulse monitoring
+];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
