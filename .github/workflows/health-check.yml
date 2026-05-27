@@ -1,0 +1,64 @@
+name: Health Check Monitor
+
+on:
+  schedule:
+    # Run health check every 15 minutes (*/15 * * * *)
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Run Health Check
+        env:
+          HEALTH_CHECK_URL: ${{ secrets.HEALTH_CHECK_URL }}
+          WEBHOOK_API_KEY: ${{ secrets.WEBHOOK_API_KEY }}
+        run: |
+          if [ -z "$HEALTH_CHECK_URL" ]; then
+            echo "ERROR: HEALTH_CHECK_URL not configured in secrets"
+            exit 1
+          fi
+
+          echo "Running health check at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            -H "Authorization: Bearer $WEBHOOK_API_KEY" \
+            "$HEALTH_CHECK_URL/api/health-check-cron")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "Response Code: $http_code"
+          echo "Response Body:"
+          echo "$body" | jq '.' 2>/dev/null || echo "$body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "ERROR: Health check failed with status $http_code"
+            exit 1
+          fi
+
+          # Verify response contains expected fields
+          if echo "$body" | jq -e '.status' >/dev/null 2>&1; then
+            echo "✅ Health check passed"
+          else
+            echo "ERROR: Invalid health check response"
+            exit 1
+          fi
+
+      - name: Notify on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Health Check Failed',
+              body: `Health check failed at ${new Date().toISOString()}\n\nWorkflow: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['critical', 'monitoring']
+            });
+            console.log(`Created issue #${issue.data.number}`);

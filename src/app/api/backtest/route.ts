@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store in database
-    const result = dbOps.insertBacktestResult({
+    dbOps.insertBacktestResult({
       month,
       instrument,
       trades,
@@ -151,7 +151,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<BacktestResponse>(
       {
         success: true,
-        data: [result],
+        data: [{
+          month,
+          instrument,
+          trades,
+          winRate,
+          totalRisk,
+          expectedWins,
+          expectedLoss,
+          netPnL,
+          roi,
+          riskPerTrade,
+        }],
       },
       { status: 201 }
     );

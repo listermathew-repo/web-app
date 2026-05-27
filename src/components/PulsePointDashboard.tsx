@@ -54,13 +54,10 @@ export default function PulsePointDashboard() {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch and auto-refresh
   useEffect(() => {
     fetchPulseData();
-  }, [fetchPulseData]);
-
-  // Auto-refresh every 15 minutes
-  useEffect(() => {
+    // Auto-refresh every 15 minutes
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {

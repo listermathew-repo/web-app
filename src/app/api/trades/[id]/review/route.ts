@@ -46,11 +46,11 @@ export async function GET(
 
     // 4. Build Plotly candlestick trace
     const candleTrace = {
-      x: ohlcvData.map((bar: any) => new Date(bar.time * 1000).toISOString()),
-      open: ohlcvData.map((bar: any) => bar.open),
-      high: ohlcvData.map((bar: any) => bar.high),
-      low: ohlcvData.map((bar: any) => bar.low),
-      close: ohlcvData.map((bar: any) => bar.close),
+      x: ohlcvData.map((bar: Record<string, unknown>) => new Date((bar.time as number) * 1000).toISOString()),
+      open: ohlcvData.map((bar: Record<string, unknown>) => bar.open),
+      high: ohlcvData.map((bar: Record<string, unknown>) => bar.high),
+      low: ohlcvData.map((bar: Record<string, unknown>) => bar.low),
+      close: ohlcvData.map((bar: Record<string, unknown>) => bar.close),
       type: 'candlestick',
       name: 'OHLC',
     };

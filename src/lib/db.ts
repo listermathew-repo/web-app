@@ -184,8 +184,8 @@ export const dbOps = {
   }) => {
     const sql = `
       INSERT INTO pending_trades
-      (id, symbol, direction, entry_level, stop_level, retap_level, risk_amount, scenario)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (id, symbol, direction, entry_level, stop_level, retap_level, risk_amount, scenario, created_at, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, datetime('now', '+5 minutes'))
     `;
     return run(sql, [
       trade.id,
@@ -211,6 +211,12 @@ export const dbOps = {
   getPendingTradeById: (id: string) => {
     const sql = 'SELECT * FROM pending_trades WHERE id = ?';
     return get(sql, [id]);
+  },
+
+  isTradeExpired: (id: string) => {
+    const sql = `SELECT expires_at > CURRENT_TIMESTAMP as is_valid FROM pending_trades WHERE id = ?`;
+    const result = get(sql, [id]) as any;
+    return result?.is_valid === 0; // 0 means expired, 1 means valid
   },
 
   approvePendingTrade: (id: string, executionPrice: number, dealReference: string) => {
@@ -563,6 +569,28 @@ export const dbOps = {
       totalTrades: results.reduce((sum, r) => sum + r.trades, 0),
       averageWinRate: results.reduce((sum, r) => sum + r.winRate, 0) / results.length,
     };
+  },
+
+  // Health Check Logging
+  logHealthCheck: (component: string, status: string, message: string) => {
+    const sql = `
+      INSERT INTO system_health (component, status, message, last_check, error_count)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+      ON CONFLICT(component) DO UPDATE SET
+        status = excluded.status,
+        message = excluded.message,
+        last_check = CURRENT_TIMESTAMP,
+        error_count = CASE
+          WHEN excluded.status = 'error' THEN error_count + 1
+          ELSE 0
+        END
+    `;
+    return run(sql, [component, status, message, status === 'error' ? 1 : 0]);
+  },
+
+  getHealthStatus: () => {
+    const sql = 'SELECT * FROM system_health ORDER BY last_check DESC';
+    return all(sql);
   },
 };
 

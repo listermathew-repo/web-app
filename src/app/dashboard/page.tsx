@@ -85,6 +85,12 @@ export default function DashboardPage() {
     },
   });
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -318,7 +324,7 @@ export default function DashboardPage() {
             {filteredPendingTrades.map((trade) => {
               const timeRemaining = Math.max(
                 0,
-                Math.round((new Date(trade.expiresAt).getTime() - Date.now()) / 1000)
+                Math.round((new Date(trade.expiresAt).getTime() - now) / 1000)
               );
               const risk = Math.abs(trade.entryLevel - trade.stopLevel);
               const rrr = risk > 0 ? 400 / risk : 0;

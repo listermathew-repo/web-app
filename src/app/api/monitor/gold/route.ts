@@ -85,7 +85,7 @@ export async function GET() {
 
     // Send error alert
     try {
-      await sendAlert('error', `🔴 GOLD MONITOR ERROR: ${error instanceof Error ? error.message : String(error)}`);
+      await sendAlert({ type: 'error', message: `🔴 GOLD MONITOR ERROR: ${error instanceof Error ? error.message : String(error)}`, tags: ['gold_monitor', 'error'] });
     } catch (alertError) {
       console.error('Failed to send error alert:', alertError);
     }

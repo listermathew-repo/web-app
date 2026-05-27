@@ -68,7 +68,7 @@ export async function GET() {
     const startTime = Date.now();
     const checkTime = new Date().toISOString();
 
-    const results: Record<string, any> = {};
+    const results: Record<string, unknown> = {};
     const triggeredAlerts: string[] = [];
     const warningAlerts: string[] = [];
 
@@ -137,7 +137,7 @@ export async function GET() {
     // Send summary alert if there are triggered stop losses
     if (triggeredAlerts.length > 0) {
       const summary = `🔴 STOP LOSS ALERT SUMMARY\n\n${triggeredAlerts.join('\n')}`;
-      await sendAlert('error', summary);
+      await sendAlert({ type: 'error', message: summary, tags: ['stop_loss', 'critical'] });
     }
 
     const responseTime = Date.now() - startTime;

@@ -30,7 +30,7 @@
  *   - Execution happens within 1-2 minute window
  */
 
-import { sendAlert, sendTradeAlert } from './alerts';
+import { sendAlert } from './alerts';
 import { dbOps } from './db';
 
 // Confirmation stages
@@ -180,7 +180,7 @@ class AdvancedPulseEngine {
       return newSetups;
     } catch (error) {
       console.error(`[STAGE 1] Error: ${error}`);
-      await sendAlert('error', `🔴 STAGE 1 ERROR (15M detection): ${error}`);
+      await sendAlert({ type: 'error', message: `🔴 STAGE 1 ERROR (15M detection): ${error}`, tags: ['stage_1', 'error'] });
       return [];
     }
   }
@@ -209,10 +209,11 @@ class AdvancedPulseEngine {
         setup.stageTimestamps.ready = new Date().toISOString();
         setup.confidence.confirmed_10m = 70 + strength * 10; // 70-100
 
-        await sendAlert(
-          'info',
-          `✅ 10M CONFIRMED - ${setup.symbol} ${setup.direction.toUpperCase()} | Confidence: ${setup.confidence.confirmed_10m}/100 | Proceeding to 5M`
-        );
+        await sendAlert({
+          type: 'success',
+          message: `✅ 10M CONFIRMED - ${setup.symbol} ${setup.direction.toUpperCase()} | Confidence: ${setup.confidence.confirmed_10m}/100 | Proceeding to 5M`,
+          tags: ['stage_2', 'confirmed']
+        });
 
         console.log(`[STAGE 2] 10M confirmed: ${setup.id}`);
         return setup;
@@ -257,10 +258,11 @@ class AdvancedPulseEngine {
         setup.entryWindowStart = now.toISOString();
         setup.entryWindowEnd = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
 
-        await sendAlert(
-          'info',
-          `✅ 5M VALUE CONFIRMED - ${setup.symbol} | Entry window OPEN (15 min) | Monitoring 3M/2M/1M for trigger`
-        );
+        await sendAlert({
+          type: 'success',
+          message: `✅ 5M VALUE CONFIRMED - ${setup.symbol} | Entry window OPEN (15 min) | Monitoring 3M/2M/1M for trigger`,
+          tags: ['stage_3', 'entry_open']
+        });
 
         console.log(`[STAGE 3] 5M confirmed, entry window open: ${setup.id}`);
         return setup;
@@ -291,7 +293,7 @@ class AdvancedPulseEngine {
     if (setup.entryWindowEnd && new Date() > new Date(setup.entryWindowEnd)) {
       setup.stage = 'missed';
       setup.errorMessage = 'Entry window expired (15 min)';
-      await sendAlert('error', `❌ ENTRY WINDOW EXPIRED - ${setup.symbol} setup missed`);
+      await sendAlert({ type: 'error', message: `❌ ENTRY WINDOW EXPIRED - ${setup.symbol} setup missed`, tags: ['entry_window', 'missed'] });
       return setup;
     }
 
@@ -306,15 +308,16 @@ class AdvancedPulseEngine {
 
       if (entryCandelConfirmed) {
         setup.stage = 'trigger_ready';
-        setup.stageTimestamps.precision_3m = new Date().toISOString();
+        setup.stageTimestamps.precision_pending = new Date().toISOString();
         setup.stageTimestamps.trigger_ready = new Date().toISOString();
         setup.confidence.precision_3m = 85 + strength * 10; // 85-100
 
         // Last 2 stages: need 2M + 1M confirmation before executing
-        await sendAlert(
-          'critical',
-          `🎯 3M ENTRY CANDLE CONFIRMED! - ${setup.symbol} | STANDBY for 2M/1M final confirmation | Will execute within 1-2 minutes`
-        );
+        await sendAlert({
+          type: 'warning',
+          message: `🎯 3M ENTRY CANDLE CONFIRMED! - ${setup.symbol} | STANDBY for 2M/1M final confirmation | Will execute within 1-2 minutes`,
+          tags: ['stage_4', 'standby']
+        });
 
         console.log(`[STAGE 4] Entry candle confirmed, ready for 2M/1M: ${setup.id}`);
         return setup;
@@ -371,20 +374,21 @@ class AdvancedPulseEngine {
           setup.dealReference = result.dealReference;
           setup.executionPrice = result.executionPrice;
 
-          await sendAlert(
-            'success',
-            `✅ TRADE EXECUTED! - ${setup.symbol} ${setup.direction.toUpperCase()} @ ${result.executionPrice.toFixed(
+          await sendAlert({
+            type: 'success',
+            message: `✅ TRADE EXECUTED! - ${setup.symbol} ${setup.direction.toUpperCase()} @ ${result.executionPrice.toFixed(
               5
             )} | Deal: ${result.dealReference} | Stop: ${setup.stopLevel.toFixed(4)} | Target: ${setup.targetLevel.toFixed(
               4
-            )}`
-          );
+            )}`,
+            tags: ['trade', 'executed']
+          });
 
           console.log(`[STAGE 5] TRADE EXECUTED: ${setup.id}`);
           return setup;
         } else {
           setup.errorMessage = result.error;
-          await sendAlert('error', `❌ EXECUTION FAILED - ${setup.symbol}: ${result.error}`);
+          await sendAlert({ type: 'error', message: `❌ EXECUTION FAILED - ${setup.symbol}: ${result.error}`, tags: ['trade', 'failed'] });
           return setup;
         }
       } else {
@@ -459,10 +463,11 @@ class AdvancedPulseEngine {
     setup.stage = 'standby';
     setup.stageTimestamps.standby = new Date().toISOString();
 
-    await sendAlert(
-      'info',
-      `✅ USER APPROVED - ${setup.symbol} | Monitoring 10M for impulsive move + pullback structure`
-    );
+    await sendAlert({
+      type: 'success',
+      message: `✅ USER APPROVED - ${setup.symbol} | Monitoring 10M for impulsive move + pullback structure`,
+      tags: ['user_approval', 'confirmed']
+    });
 
     console.log(`[APPROVAL] Setup approved by user: ${setupId}`);
     return setup;
@@ -560,7 +565,7 @@ class AdvancedPulseEngine {
       confidence: { initial_15m: confluenceScore },
       analysis: {
         tf_4h: { direction: tf4H.direction, strength: 0.8, ema10: tf4H.ema10, ema21: tf4H.ema21 },
-        tf_1h: { direction: tf1H.direction, strength: 0.6, fvg_type: fvg.type },
+        tf_1h: { direction: tf1H.direction, strength: 0.6, fvg_type: (fvg.type as 'bullish' | 'bearish') },
         tf_15m: { pullback_confirmed: true, entry_structure: 'valid' },
       },
       riskAmount: 350,
@@ -587,7 +592,7 @@ STATUS: Detected - Standing By for 10M Confirmation
 Review & approve in dashboard to begin progression through stages:
 15M (detected) → 10M (confirm) → 5M (value) → 3M (entry candle) → 2M/1M (EXECUTE)
     `;
-    await sendAlert('info', alert);
+    await sendAlert({ type: 'success', message: alert, tags: ['setup', 'detected'] });
   }
 
   private async queueSetupForUserReview(setup: StagedSetup): Promise<void> {
@@ -601,8 +606,6 @@ Review & approve in dashboard to begin progression through stages:
         retap_level: setup.retapLevel,
         risk_amount: setup.riskAmount,
         scenario: `FVG ${setup.direction} - Stage 1 Detected (${setup.confidence.initial_15m}/100)`,
-        created_at: setup.timestamp,
-        status: 'pending',
       });
     } catch (error) {
       console.error('[QUEUE] Failed to queue setup:', error);
@@ -669,4 +672,5 @@ export function getAdvancedPulseEngine(): AdvancedPulseEngine {
   return engineInstance;
 }
 
-export { AdvancedPulseEngine, StagedSetup, ConfirmationStage };
+export { AdvancedPulseEngine };
+export type { StagedSetup, ConfirmationStage };

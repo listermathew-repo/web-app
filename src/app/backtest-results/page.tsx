@@ -42,16 +42,6 @@ const worstTrades = [
   { date: "Feb 26", symbol: "AUDUSD", direction: "SELL", entry: 0.6540, exit: 0.6512, pnl: -73.80, pnl_realistic: -55.60, r: -0.74, quality: "C" },
 ];
 
-const dailyBreakdown = [
-  { day: "Feb 1", trades: 1, wins: 1, pnl: 87.20, pnl_realistic: 65.70 },
-  { day: "Feb 2", trades: 0, wins: 0, pnl: 0, pnl_realistic: 0 },
-  { day: "Feb 3", trades: 2, wins: 2, pnl: 298.30, pnl_realistic: 224.80 },
-  { day: "Feb 4", trades: 1, wins: 0, pnl: -142.30, pnl_realistic: -107.20 },
-  { day: "Feb 5", trades: 1, wins: 1, pnl: 156.40, pnl_realistic: 117.90 },
-  { day: "Feb 6", trades: 0, wins: 0, pnl: 0, pnl_realistic: 0 },
-  { day: "Feb 7", trades: 1, wins: 0, pnl: -14.20, pnl_realistic: -10.70 },
-];
-
 const equityCurve = [
   { date: "Feb 1", balance: 10087.20, prop_firm: 10087.20 },
   { date: "Feb 3", balance: 10385.50, prop_firm: 10385.50 },

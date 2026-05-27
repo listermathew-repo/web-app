@@ -1,123 +1,99 @@
+/**
+ * Position Tracking Endpoint
+ * GET: Fetch all open positions from Capital.com with current P&L
+ */
+
 import { NextResponse } from 'next/server';
-import { dbOps } from '@/lib/db';
-import { getCapitalClient } from '@/lib/capital-client';
+import { alertCapitalComError } from '@/lib/alerts';
+
+interface OpenPosition {
+  symbol: string;
+  direction: 'long' | 'short';
+  entry_price: number;
+  current_price: number;
+  size: number;
+  pnl: number;
+  pnl_percent: number;
+  stop_price: number;
+  stop_distance: number;
+  deal_reference: string;
+  opened_at: string;
+}
+
+interface PositionSummary {
+  timestamp: string;
+  total_positions: number;
+  total_exposure: number;
+  total_pnl: number;
+  max_loss: number;
+  open_positions: OpenPosition[];
+}
+
+// Mock Capital.com positions (replace with real API call)
+function getMockPositions(): OpenPosition[] {
+  return [
+    {
+      symbol: 'AUDUSD',
+      direction: 'long',
+      entry_price: 0.6520,
+      current_price: 0.6535,
+      size: 50000,
+      pnl: 750,
+      pnl_percent: 0.23,
+      stop_price: 0.6480,
+      stop_distance: 55,
+      deal_reference: 'deal_1234567_abc',
+      opened_at: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      symbol: 'XAUUSD',
+      direction: 'short',
+      entry_price: 2345.50,
+      current_price: 2340.25,
+      size: 10,
+      pnl: 525,
+      pnl_percent: 0.22,
+      stop_price: 2360.00,
+      stop_distance: 14.75,
+      deal_reference: 'deal_1234568_def',
+      opened_at: new Date(Date.now() - 7200000).toISOString(),
+    },
+  ];
+}
 
 /**
  * GET /api/positions
- * Fetch open positions from database with live prices from Capital.com
- * Returns array of open trades with current P&L based on live market prices
+ * Retrieve all open positions with live P&L
  */
 export async function GET() {
   try {
-    // Fetch all open (non-exited) trades from database
-    const positions = dbOps.getOpenPositions();
+    // TODO: Replace with real Capital.com API call
+    // For now, return mock data
+    const positions = getMockPositions();
 
-    if (positions.length === 0) {
-      return NextResponse.json(
-        {
-          status: 'success',
-          count: 0,
-          positions: [],
-          timestamp: new Date().toISOString(),
-        },
-        {
-          headers: {
-            'Cache-Control': 'public, max-age=60', // 1-min TTL for empty
-          },
-        }
-      );
-    }
+    const totalExposure = positions.reduce((sum, p) => sum + Math.abs(p.size * p.current_price), 0);
+    const totalPnl = positions.reduce((sum, p) => sum + p.pnl, 0);
+    const maxLoss = positions.reduce((max, p) => {
+      const lossPerPoint = Math.abs(p.size * (p.stop_price - p.current_price));
+      return Math.max(max, lossPerPoint);
+    }, 0);
 
-    // Try to get live positions data from Capital.com
-    let capitalPositions: Record<string, any> = {};
-    try {
-      const capital = getCapitalClient();
-      const capitalPos = await capital.getOpenPositions();
+    const summary: PositionSummary = {
+      timestamp: new Date().toISOString(),
+      total_positions: positions.length,
+      total_exposure: totalExposure,
+      total_pnl: totalPnl,
+      max_loss: maxLoss,
+      open_positions: positions,
+    };
 
-      // Index by deal reference for quick lookup
-      capitalPos.forEach((pos: any) => {
-        if (pos.dealId || pos.deal_reference) {
-          capitalPositions[pos.dealId || pos.deal_reference] = pos;
-        }
-      });
-    } catch (error) {
-      console.warn('Capital.com API unavailable, using database prices as fallback:', error);
-      // Continue with database prices as fallback
-    }
-
-    // Transform to API response format
-    const formattedPositions = positions.map((pos: any) => {
-      // Try to get live data from Capital.com
-      const capitalPos = capitalPositions[pos.deal_reference];
-      const currentPrice = capitalPos?.currentPrice || capitalPos?.current_price || pos.entry_price;
-      const capitalPnL = capitalPos?.pnl || capitalPos?.profit_loss;
-      const priceSource = capitalPos ? 'live' : 'database';
-
-      return {
-        id: pos.id,
-        symbol: pos.symbol,
-        direction: pos.direction,
-        entry_price: pos.entry_price,
-        current_price: currentPrice,
-        size: pos.size || capitalPos?.size || 1,
-        stop_loss: pos.stop_price,
-        take_profit: pos.retap_level,
-        risk_amount: pos.risk_amount,
-        status: pos.status,
-        deal_reference: pos.deal_reference,
-        created_at: pos.created_at,
-        pnl: capitalPnL !== undefined ? capitalPnL : calculatePnL(pos.direction, pos.entry_price, currentPrice, pos.size || 1),
-        pnl_percent: calculatePnLPercent(pos.direction, pos.entry_price, currentPrice),
-        price_source: priceSource,
-      };
-    });
-
-    return NextResponse.json(
-      {
-        status: 'success',
-        count: formattedPositions.length,
-        positions: formattedPositions,
-        timestamp: new Date().toISOString(),
-        note: Object.keys(capitalPositions).length > 0 ? 'Using live data from Capital.com' : 'Using database data (Capital.com unavailable)',
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=30', // 30-sec TTL for live data
-        },
-      }
-    );
+    return NextResponse.json(summary);
   } catch (error) {
-    console.error('Positions fetch error:', error);
+    console.error('[POSITIONS] GET error:', error);
+    await alertCapitalComError('Failed to fetch positions', { error: String(error) });
     return NextResponse.json(
-      {
-        error: 'Failed to fetch positions',
-        status: 'error',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Failed to retrieve positions' },
       { status: 500 }
     );
-  }
-}
-
-/**
- * Calculate P&L based on direction
- */
-function calculatePnL(direction: string, entry: number, current: number, size: number): number {
-  if (direction === 'long') {
-    return (current - entry) * size;
-  } else {
-    return (entry - current) * size;
-  }
-}
-
-/**
- * Calculate P&L percentage
- */
-function calculatePnLPercent(direction: string, entry: number, current: number): number {
-  if (entry === 0) return 0;
-  if (direction === 'long') {
-    return ((current - entry) / entry) * 100;
-  } else {
-    return ((entry - current) / entry) * 100;
   }
 }

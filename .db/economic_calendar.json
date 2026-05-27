@@ -1,0 +1,182 @@
+[
+  {
+    "date": "2026-05-27",
+    "source": "manual",
+    "events": [
+      {
+        "date": "2026-05-27",
+        "time": "09:00",
+        "timezone": "JPY",
+        "event": "SPPI y/y",
+        "impact": "medium",
+        "forecast": "3.3%",
+        "actual": "3.3%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "09:30",
+        "timezone": "JPY",
+        "event": "BOJ Gov Ueda Speaks",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "10:00",
+        "timezone": "AUD",
+        "event": "MI Leading Index m/m",
+        "impact": "low",
+        "forecast": "0.0%",
+        "actual": "-0.1%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:00",
+        "timezone": "AUD",
+        "event": "CPI m/m",
+        "impact": "high",
+        "forecast": "0.6%",
+        "actual": "1.1%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:00",
+        "timezone": "AUD",
+        "event": "CPI y/y",
+        "impact": "high",
+        "forecast": "4.4%",
+        "actual": "4.6%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:00",
+        "timezone": "AUD",
+        "event": "Trimmed Mean CPI m/m",
+        "impact": "high",
+        "forecast": "0.3%",
+        "actual": "0.2%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:00",
+        "timezone": "AUD",
+        "event": "Construction Work Done q/q",
+        "impact": "medium",
+        "forecast": "0.8%",
+        "actual": "0.2%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:30",
+        "timezone": "NZD",
+        "event": "Official Cash Rate",
+        "impact": "high",
+        "forecast": "2.25%",
+        "actual": "2.25%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:30",
+        "timezone": "NZD",
+        "event": "RBNZ Monetary Policy Statement",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "11:30",
+        "timezone": "NZD",
+        "event": "RBNZ Rate Statement",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "12:30",
+        "timezone": "NZD",
+        "event": "RBNZ Press Conference",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "17:30",
+        "timezone": "AUD",
+        "event": "RBA Deputy Gov Hauser Speaks",
+        "impact": "medium"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "17:30",
+        "timezone": "EUR",
+        "event": "ECB Financial Stability Review",
+        "impact": "medium"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "17:30",
+        "timezone": "USD",
+        "event": "FOMC Member Logan Speaks",
+        "impact": "medium"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "21:45",
+        "timezone": "EUR",
+        "event": "German 30-y Bond Auction",
+        "impact": "low",
+        "forecast": "3.62|1.3"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "21:45",
+        "timezone": "USD",
+        "event": "ADP Weekly Employment Change",
+        "impact": "high",
+        "actual": "42.3K"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "22:30",
+        "timezone": "CNY",
+        "event": "CB Leading Index m/m",
+        "impact": "low",
+        "actual": "-0.2%"
+      },
+      {
+        "date": "2026-05-27",
+        "time": "23:30",
+        "timezone": "USD",
+        "event": "Richmond Manufacturing Index",
+        "impact": "medium",
+        "forecast": "4",
+        "actual": "3"
+      }
+    ],
+    "lastUpdated": "2026-05-26T22:00:00Z"
+  },
+  {
+    "date": "2026-05-28",
+    "source": "manual",
+    "events": [
+      {
+        "date": "2026-05-28",
+        "time": "14:00",
+        "timezone": "AUD",
+        "event": "RBA Interest Rate Decision",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-28",
+        "time": "15:30",
+        "timezone": "EUR",
+        "event": "ECB Interest Rate Decision",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-28",
+        "time": "20:00",
+        "timezone": "USD",
+        "event": "Non-Farm Payroll",
+        "impact": "high"
+      }
+    ],
+    "lastUpdated": "2026-05-27T06:05:51.131Z"
+  }
+]

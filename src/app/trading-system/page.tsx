@@ -165,7 +165,7 @@ export default function TradingSystemPage() {
         <h2 className="text-sm font-semibold text-green-900 uppercase tracking-wider mb-4">How to Create a TradingView Alert</h2>
         <div className="space-y-3 text-sm text-slate-700">
           <p><span className="font-semibold">1. Open TradingView</span> → Go to your chart</p>
-          <p><span className="font-semibold">2. Right-click chart</span> → Select "Add alert"</p>
+          <p><span className="font-semibold">2. Right-click chart</span> → Select &quot;Add alert&quot;</p>
           <p><span className="font-semibold">3. Set conditions</span> → Choose your signal (price cross, indicator, etc.)</p>
           <p><span className="font-semibold">4. In Message field, paste:</span></p>
           <div className="bg-white rounded p-3 font-mono text-xs mt-2 border border-slate-200 overflow-x-auto">
@@ -179,8 +179,8 @@ export default function TradingSystemPage() {
   "take_profit": 1.105
 }`}
           </div>
-          <p className="mt-3"><span className="font-semibold">5. Enable "Webhook URL"</span> → Paste: <span className="font-mono bg-slate-100 px-1 rounded text-[11px]">https://waves-treated-ecommerce-artist.trycloudflare.com/webhook</span></p>
-          <p><span className="font-semibold">6. Click "Create Alert"</span> ✅</p>
+          <p className="mt-3"><span className="font-semibold">5. Enable &quot;Webhook URL&quot;</span> → Paste: <span className="font-mono bg-slate-100 px-1 rounded text-[11px]">https://waves-treated-ecommerce-artist.trycloudflare.com/webhook</span></p>
+          <p><span className="font-semibold">6. Click &quot;Create Alert&quot;</span> ✅</p>
         </div>
       </div>
 
