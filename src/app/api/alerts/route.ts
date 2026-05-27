@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     const apiKey = request.headers.get('X-API-Key');
     if (!apiKey || apiKey !== process.env.WEBHOOK_API_KEY) {
       logWithContext(ctx, 'Unauthorized webhook attempt');
-      await sendAlert('error', '🔐 WEBHOOK AUTH FAILED - Invalid API key');
+      await sendAlert({ type: 'error', message: '🔐 WEBHOOK AUTH FAILED - Invalid API key', tags: ['auth', 'webhook'] });
       return NextResponse.json(
         { error: 'Unauthorized', ...formatContextForResponse(ctx) },
         { status: 401 }
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch (error) {
       logWithContext(ctx, 'Failed to parse webhook body', error);
-      await sendAlert('error', '🔴 WEBHOOK ERROR - Invalid JSON payload');
+      await sendAlert({ type: 'error', message: '🔴 WEBHOOK ERROR - Invalid JSON payload', tags: ['webhook', 'validation'] });
       return NextResponse.json(
         { error: 'Invalid JSON payload', ...formatContextForResponse(ctx) },
         { status: 400 }
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
       alert = TradeAlertSchema.parse(body);
     } catch (error) {
       logWithContext(ctx, 'Webhook validation error', error);
-      await sendAlert('error', `🔴 WEBHOOK VALIDATION ERROR - ${error}`);
+      await sendAlert({ type: 'error', message: `🔴 WEBHOOK VALIDATION ERROR - ${error}`, tags: ['webhook', 'validation'] });
       return NextResponse.json(
         { error: 'Invalid alert schema', ...formatContextForResponse(ctx) },
         { status: 400 }
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
 
       if (recent.length > 0) {
         logWithContext(ctx, `Duplicate trade detected`, { symbol: alert.symbol, direction: alert.direction });
-        await sendAlert('warning', `🚫 DUPLICATE TRADE - ${alert.symbol} ${alert.direction} within 30s [${ctx.requestId}]`);
+        await sendAlert({ type: 'warning', message: `🚫 DUPLICATE TRADE - ${alert.symbol} ${alert.direction} within 30s [${ctx.requestId}]`, tags: ['duplicate', 'rate_limit'] });
         return NextResponse.json(
           { error: 'Duplicate trade within 30 seconds', ...formatContextForResponse(ctx) },
           { status: 429 }
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       logWithContext(ctx, 'Duplicate check error', error);
-      await sendAlert('error', `💾 DATABASE ERROR - Cannot check for duplicates [${ctx.requestId}]`);
+      await sendAlert({ type: 'error', message: `💾 DATABASE ERROR - Cannot check for duplicates [${ctx.requestId}]`, tags: ['database', 'critical'] });
       return NextResponse.json(
         { error: 'Database error', ...formatContextForResponse(ctx) },
         { status: 500 }
@@ -273,10 +273,11 @@ export async function POST(request: NextRequest) {
         const report = formatValidationReport(validationResult);
         console.warn(`Trade rejected: ${tradeId}`, report);
 
-        await sendAlert(
-          'error',
-          `❌ TRADE REJECTED: ${alert.symbol} ${alert.direction.toUpperCase()}\n\n${report}`
-        );
+        await sendAlert({
+          type: 'error',
+          message: `❌ TRADE REJECTED: ${alert.symbol} ${alert.direction.toUpperCase()}\n\n${report}`,
+          tags: ['trade', 'rejected']
+        });
 
         logWithContext(ctx, 'Trade validation failed', { reason: validationResult.rejectionReasons });
         return NextResponse.json(
@@ -295,7 +296,7 @@ export async function POST(request: NextRequest) {
       logWithContext(ctx, 'Trade validation passed');
     } catch (error) {
       logWithContext(ctx, 'Trade validation error', error);
-      await sendAlert('error', `⚠️ VALIDATION ERROR - ${error} [${ctx.requestId}]`);
+      await sendAlert({ type: 'error', message: `⚠️ VALIDATION ERROR - ${error} [${ctx.requestId}]`, tags: ['validation', 'error'] });
       return NextResponse.json(
         { error: 'Validation error', ...formatContextForResponse(ctx) },
         { status: 500 }
@@ -328,10 +329,11 @@ export async function POST(request: NextRequest) {
 
       // Send ntfy notification
       const direction = alert.direction.toUpperCase();
-      await sendAlert(
-        'success',
-        `✅ TRADE QUEUED [${ctx.requestId}]: ${alert.symbol} ${direction} @ ${alert.entry_level}\nApprove in web app → /api/pending`
-      );
+      await sendAlert({
+        type: 'success',
+        message: `✅ TRADE QUEUED [${ctx.requestId}]: ${alert.symbol} ${direction} @ ${alert.entry_level}\nApprove in web app → /api/pending`,
+        tags: ['trade', 'pending']
+      });
 
       logWithContext(ctx, 'Trade queued successfully');
 
@@ -351,7 +353,7 @@ export async function POST(request: NextRequest) {
       );
     } catch (error) {
       logWithContext(ctx, 'Failed to queue trade', error);
-      await sendAlert('error', `💾 DATABASE ERROR - Cannot save trade: ${error} [${ctx.requestId}]`);
+      await sendAlert({ type: 'error', message: `💾 DATABASE ERROR - Cannot save trade: ${error} [${ctx.requestId}]`, tags: ['database', 'critical'] });
       return NextResponse.json(
         { error: 'Failed to queue trade', ...formatContextForResponse(ctx) },
         { status: 500 }
@@ -359,7 +361,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     logWithContext(ctx, 'Unexpected webhook error', error);
-    await sendAlert('error', `⚠️ WEBHOOK UNEXPECTED ERROR - ${error} [${ctx.requestId}]`);
+    await sendAlert({ type: 'error', message: `⚠️ WEBHOOK UNEXPECTED ERROR - ${error} [${ctx.requestId}]`, tags: ['webhook', 'error'] });
     return NextResponse.json(
       { error: 'Internal server error', ...formatContextForResponse(ctx) },
       { status: 500 }
