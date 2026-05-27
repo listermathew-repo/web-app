@@ -1,36 +1,91 @@
+/**
+ * Pending Trades Approval Queue
+ * GET: List all pending trades waiting for approval
+ * POST: Internal use - submitted via webhook
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { dbOps } from '@/lib/db';
-import { sendTradeAlert, sendErrorAlert } from '@/lib/alerts';
+import fs from 'fs';
+import path from 'path';
+import { alertTradePending, alertTradeRejected } from '@/lib/alerts';
+
+interface PendingTrade {
+  id: string;
+  symbol: string;
+  direction: 'long' | 'short';
+  entry_level: number;
+  stop_level: number;
+  retap_level?: number;
+  risk_amount: number;
+  scenario?: string;
+  created_at: string;
+  expires_at: string;
+  status: 'pending' | 'approved' | 'rejected' | 'executed';
+  approved_at?: string;
+  approved_by?: string;
+  execution_price?: number;
+  deal_reference?: string;
+  error_message?: string;
+}
+
+const PENDING_FILE = path.join(process.cwd(), '.db', 'pending_trades.json');
+
+function ensurePendingFile(): void {
+  const dbDir = path.dirname(PENDING_FILE);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+  if (!fs.existsSync(PENDING_FILE)) {
+    fs.writeFileSync(PENDING_FILE, JSON.stringify([], null, 2));
+  }
+}
+
+function generateId(): string {
+  return `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
 
 /**
  * GET /api/pending
- * List all pending trades awaiting approval
+ * List all pending trades waiting for approval
  */
 export async function GET(request: NextRequest) {
   try {
-    // Auto-cleanup expired trades first
-    dbOps.autoCleanupExpiredTrades();
+    ensurePendingFile();
+    const data = fs.readFileSync(PENDING_FILE, 'utf-8');
+    const trades: PendingTrade[] = JSON.parse(data);
 
-    // Get pending trades
-    const trades = dbOps.getPendingTrades();
+    // Filter for pending trades only, exclude expired
+    const now = new Date();
+    const pending = trades.filter((trade) => {
+      if (trade.status !== 'pending') return false;
+      if (new Date(trade.expires_at) < now) {
+        trade.status = 'rejected';
+        trade.error_message = 'Expired (5 min timeout)';
+        return false;
+      }
+      return true;
+    });
 
-    // Add time remaining to each trade
-    const tradesWithExpiry = trades.map((trade: any) => ({
-      ...trade,
-      time_remaining_seconds: Math.max(
-        0,
-        Math.floor((new Date(trade.created_at).getTime() + 5 * 60 * 1000 - Date.now()) / 1000)
-      ),
-    }));
+    // Save updated trades (with expirations marked)
+    fs.writeFileSync(PENDING_FILE, JSON.stringify(trades, null, 2));
 
     return NextResponse.json({
-      status: 'ok',
-      count: tradesWithExpiry.length,
-      trades: tradesWithExpiry,
+      count: pending.length,
+      trades: pending.map((t) => ({
+        id: t.id,
+        symbol: t.symbol,
+        direction: t.direction,
+        entry_level: t.entry_level,
+        stop_level: t.stop_level,
+        risk_amount: t.risk_amount,
+        scenario: t.scenario,
+        created_at: t.created_at,
+        expires_at: t.expires_at,
+        time_remaining_ms: new Date(t.expires_at).getTime() - Date.now(),
+      })),
     });
   } catch (error) {
-    console.error('GET /api/pending error:', error);
-    await sendErrorAlert('PENDING_LIST', error as Error);
+    console.error('[PENDING] GET error:', error);
     return NextResponse.json(
       { error: 'Failed to retrieve pending trades' },
       { status: 500 }
@@ -39,152 +94,103 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/pending/[id]/approve
- * Approve a pending trade and prepare for execution
+ * POST /api/pending
+ * Queue a new pending trade (called by webhook)
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id?: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const path = request.nextUrl.pathname;
-    const pathParts = path.split('/');
-    const tradeId = pathParts[3]; // /api/pending/[id]/approve
-    const action = pathParts[4]; // approve or reject
+    const body = await request.json();
+    const {
+      symbol,
+      direction,
+      entry_level,
+      stop_level,
+      retap_level,
+      risk_amount = 400,
+      scenario,
+    } = body;
 
-    if (!tradeId) {
+    // Validation
+    if (!symbol || !direction || !entry_level || !stop_level) {
       return NextResponse.json(
-        { error: 'Trade ID required' },
+        { error: 'Missing required fields: symbol, direction, entry_level, stop_level' },
         { status: 400 }
       );
     }
 
-    // Get the trade
-    const trade = dbOps.getPendingTradeById(tradeId);
-    if (!trade) {
+    if (!['long', 'short'].includes(direction)) {
       return NextResponse.json(
-        { error: 'Trade not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if already processed
-    if (trade.status !== 'pending') {
-      return NextResponse.json(
-        { error: `Trade already ${trade.status}` },
+        { error: 'Direction must be "long" or "short"' },
         { status: 400 }
       );
     }
 
-    // Check if expired (5 minutes)
-    const createdAt = new Date(trade.created_at).getTime();
-    const now = Date.now();
-    if (now - createdAt > 5 * 60 * 1000) {
-      dbOps.rejectPendingTrade(tradeId, 'Expired (5 min limit)');
-      await sendTradeAlert(
-        'rejected',
-        trade.symbol,
-        trade.direction,
-        trade.entry_level,
-        { reason: 'Expired - 5 minute approval window' }
-      );
+    // Check for duplicate trades (within 30 seconds)
+    ensurePendingFile();
+    const data = fs.readFileSync(PENDING_FILE, 'utf-8');
+    const trades: PendingTrade[] = JSON.parse(data);
+    const thirtySecondsAgo = new Date(Date.now() - 30000);
+
+    const duplicate = trades.find(
+      (t) =>
+        t.symbol === symbol &&
+        t.direction === direction &&
+        t.status === 'pending' &&
+        new Date(t.created_at) > thirtySecondsAgo
+    );
+
+    if (duplicate) {
       return NextResponse.json(
-        { error: 'Trade expired - approval window closed' },
-        { status: 400 }
+        {
+          error: 'Duplicate trade detected within 30 seconds',
+          existing_trade_id: duplicate.id,
+        },
+        { status: 429 }
       );
     }
 
-    if (action === 'approve') {
-      // Approve the trade
-      try {
-        // In a real scenario, this would call Capital.com API
-        // For now, simulate successful execution
-        const executionPrice = trade.entry_level;
-        const dealReference = `DEMO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Create pending trade
+    const tradeId = generateId();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
 
-        // Update trade status
-        dbOps.approvePendingTrade(tradeId, executionPrice, dealReference);
+    const pendingTrade: PendingTrade = {
+      id: tradeId,
+      symbol,
+      direction,
+      entry_level,
+      stop_level,
+      retap_level,
+      risk_amount,
+      scenario,
+      created_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+      status: 'pending',
+    };
 
-        // Send success alert
-        await sendTradeAlert(
-          'executed',
-          trade.symbol,
-          trade.direction,
-          executionPrice,
-          { deal_reference: dealReference, stop: trade.stop_level }
-        );
+    trades.push(pendingTrade);
+    fs.writeFileSync(PENDING_FILE, JSON.stringify(trades, null, 2));
 
-        console.log(`Trade approved: ${tradeId}`);
+    // Send alert
+    await alertTradePending(symbol, direction, entry_level);
 
-        return NextResponse.json({
-          status: 'approved',
-          trade_id: tradeId,
-          symbol: trade.symbol,
-          direction: trade.direction,
-          entry_level: trade.entry_level,
-          execution_price: executionPrice,
-          deal_reference: dealReference,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        console.error('Failed to approve trade:', error);
-        await sendErrorAlert('TRADE_APPROVAL', error as Error, { trade_id: tradeId });
-        return NextResponse.json(
-          { error: 'Failed to execute trade' },
-          { status: 500 }
-        );
-      }
-    } else if (action === 'reject') {
-      // Reject the trade
-      const reason = await request.text().then(t => {
-        try {
-          return JSON.parse(t)?.reason || 'Manual rejection';
-        } catch {
-          return 'Manual rejection';
-        }
-      });
-
-      dbOps.rejectPendingTrade(tradeId, reason);
-      await sendTradeAlert(
-        'rejected',
-        trade.symbol,
-        trade.direction,
-        trade.entry_level,
-        { reason }
-      );
-
-      console.log(`Trade rejected: ${tradeId} - ${reason}`);
-
-      return NextResponse.json({
-        status: 'rejected',
-        trade_id: tradeId,
-        reason: reason,
-        timestamp: new Date().toISOString(),
-      });
-    } else {
-      return NextResponse.json(
-        { error: 'Invalid action - use /approve or /reject' },
-        { status: 400 }
-      );
-    }
-  } catch (error) {
-    console.error('POST /api/pending error:', error);
-    await sendErrorAlert('PENDING_ACTION', error as Error);
     return NextResponse.json(
-      { error: 'Failed to process trade' },
+      {
+        status: 'queued',
+        trade_id: tradeId,
+        symbol,
+        direction,
+        entry_level,
+        approval_required: true,
+        expires_in_seconds: 300,
+      },
+      { status: 202 }
+    );
+  } catch (error) {
+    console.error('[PENDING] POST error:', error);
+    return NextResponse.json(
+      { error: 'Failed to queue trade' },
       { status: 500 }
     );
   }
-}
-
-/**
- * Dynamic routing for /api/pending/[id]/[action]
- * This function handles the dynamic segments
- */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id?: string }> }
-) {
-  // Delegate to POST handler for approve/reject
-  return POST(request, { params });
 }
