@@ -2,8 +2,8 @@ name: Daily Calendar Fetch
 
 on:
   schedule:
-    # Every day at 08:00 ADL (UTC+9:30) = 22:30 previous day UTC
-    - cron: '30 22 * * *'
+    # Every day at 08:30 ADL (UTC+9:30) = 23:00 previous day UTC
+    - cron: '00 23 * * *'
   workflow_dispatch:
 
 jobs:
