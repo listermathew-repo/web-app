@@ -8,9 +8,13 @@
  *   # or schedule via GitHub Actions / EasyCron
  */
 
+import dotenv from 'dotenv';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 interface CalendarEvent {
   date: string;

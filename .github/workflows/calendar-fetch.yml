@@ -1,0 +1,51 @@
+name: Daily Calendar Fetch
+
+on:
+  schedule:
+    # Every day at 08:00 ADL (UTC+9:30) = 22:30 previous day UTC
+    - cron: '30 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch ForexFactory Calendar
+        env:
+          SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+        run: npx ts-node scripts/scrape-forexfactory-calendar.ts
+
+      - name: Commit calendar updates
+        run: |
+          git config user.email "calendar-bot@example.com"
+          git config user.name "Calendar Bot"
+          git add .db/economic_calendar.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: Update economic calendar [skip ci]"
+          git push || echo "No changes to push"
+        continue-on-error: true
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ Daily calendar fetch failed. Check workflow logs.'
+            })
