@@ -5,9 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { alertTradePending, alertTradeRejected } from '@/lib/alerts';
+import { dbOps } from '@/lib/db';
 
 interface PendingTrade {
   id: string;
@@ -28,50 +26,18 @@ interface PendingTrade {
   error_message?: string;
 }
 
-const PENDING_FILE = path.join(process.cwd(), '.db', 'pending_trades.json');
-
-function ensurePendingFile(): void {
-  const dbDir = path.dirname(PENDING_FILE);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
-  if (!fs.existsSync(PENDING_FILE)) {
-    fs.writeFileSync(PENDING_FILE, JSON.stringify([], null, 2));
-  }
-}
-
-function generateId(): string {
-  return `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
 /**
  * GET /api/pending
  * List all pending trades waiting for approval
  */
 export async function GET(request: NextRequest) {
   try {
-    ensurePendingFile();
-    const data = fs.readFileSync(PENDING_FILE, 'utf-8');
-    const trades: PendingTrade[] = JSON.parse(data);
-
-    // Filter for pending trades only, exclude expired
-    const now = new Date();
-    const pending = trades.filter((trade) => {
-      if (trade.status !== 'pending') return false;
-      if (new Date(trade.expires_at) < now) {
-        trade.status = 'rejected';
-        trade.error_message = 'Expired (5 min timeout)';
-        return false;
-      }
-      return true;
-    });
-
-    // Save updated trades (with expirations marked)
-    fs.writeFileSync(PENDING_FILE, JSON.stringify(trades, null, 2));
+    // Get pending trades from SQLite database
+    const trades = dbOps.getPendingTrades() as PendingTrade[];
 
     return NextResponse.json({
-      count: pending.length,
-      trades: pending.map((t) => ({
+      count: trades.length,
+      trades: trades.map((t) => ({
         id: t.id,
         symbol: t.symbol,
         direction: t.direction,
@@ -126,12 +92,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate trades (within 30 seconds)
-    ensurePendingFile();
-    const data = fs.readFileSync(PENDING_FILE, 'utf-8');
-    const trades: PendingTrade[] = JSON.parse(data);
+    const allTrades = dbOps.getPendingTrades() as PendingTrade[];
     const thirtySecondsAgo = new Date(Date.now() - 30000);
 
-    const duplicate = trades.find(
+    const duplicate = allTrades.find(
       (t) =>
         t.symbol === symbol &&
         t.direction === direction &&
@@ -149,43 +113,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create pending trade
-    const tradeId = generateId();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
+    // Create pending trade via dbOps
+    const tradeId = `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const pendingTrade: PendingTrade = {
-      id: tradeId,
-      symbol,
-      direction,
-      entry_level,
-      stop_level,
-      retap_level,
-      risk_amount,
-      scenario,
-      created_at: now.toISOString(),
-      expires_at: expiresAt.toISOString(),
-      status: 'pending',
-    };
-
-    trades.push(pendingTrade);
-    fs.writeFileSync(PENDING_FILE, JSON.stringify(trades, null, 2));
-
-    // Send alert
-    await alertTradePending(symbol, direction, entry_level);
-
-    return NextResponse.json(
-      {
-        status: 'queued',
-        trade_id: tradeId,
+    try {
+      dbOps.insertPendingTrade({
+        id: tradeId,
         symbol,
         direction,
         entry_level,
-        approval_required: true,
-        expires_in_seconds: 300,
-      },
-      { status: 202 }
-    );
+        stop_level,
+        retap_level,
+        risk_amount,
+        scenario,
+      });
+
+      return NextResponse.json(
+        {
+          status: 'queued',
+          trade_id: tradeId,
+          symbol,
+          direction,
+          entry_level,
+          approval_required: true,
+          expires_in_seconds: 300,
+        },
+        { status: 202 }
+      );
+    } catch (dbError) {
+      console.error('[PENDING] Database error:', dbError);
+      return NextResponse.json(
+        { error: 'Failed to queue trade in database' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('[PENDING] POST error:', error);
     return NextResponse.json(
