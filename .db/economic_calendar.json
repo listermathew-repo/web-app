@@ -150,5 +150,33 @@
       }
     ],
     "lastUpdated": "2026-05-26T22:00:00Z"
+  },
+  {
+    "date": "2026-05-28",
+    "source": "manual",
+    "events": [
+      {
+        "date": "2026-05-28",
+        "time": "14:00",
+        "timezone": "AUD",
+        "event": "RBA Interest Rate Decision",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-28",
+        "time": "15:30",
+        "timezone": "EUR",
+        "event": "ECB Interest Rate Decision",
+        "impact": "high"
+      },
+      {
+        "date": "2026-05-28",
+        "time": "20:00",
+        "timezone": "USD",
+        "event": "Non-Farm Payroll",
+        "impact": "high"
+      }
+    ],
+    "lastUpdated": "2026-05-27T06:05:51.131Z"
   }
 ]

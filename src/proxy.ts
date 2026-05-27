@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/api/login",
   "/api/logout",
   "/api/alerts",
+  "/api/calendar",        // Economic calendar (public, used by scraper)
   "/api/health",
   "/api/trades/monitor",  // Live trade monitoring dashboard
   "/api/pending",         // Approval queue (authenticated via API key)
