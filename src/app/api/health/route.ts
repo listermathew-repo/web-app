@@ -3,7 +3,7 @@
  * GET: System health status for all critical components
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
@@ -30,7 +30,7 @@ interface HealthStatus {
   alerts_sent_24h: number;
 }
 
-let startTime = Date.now();
+const startTime = Date.now();
 
 async function checkDatabase(): Promise<ComponentHealth> {
   const start = Date.now();
@@ -117,7 +117,7 @@ async function checkNtfy(): Promise<ComponentHealth> {
  * GET /api/health
  * System health status
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const [dbHealth, capitalHealth, ntfyHealth] = await Promise.all([
       checkDatabase(),

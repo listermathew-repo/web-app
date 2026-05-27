@@ -13,7 +13,7 @@ export default function AristotlePage() {
         <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4">Overview & Instructions</h2>
         <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
           <p>The Aristotle First Principles Deconstructor is a high-leverage analytical framework designed to strip problems down to their irreducible truths. Rather than accepting inherited assumptions or conventional wisdom, this method forces you to identify the foundational facts that remain when every assumption is removed.</p>
-          <p>Use this prompt when facing strategic decisions where conventional approaches feel limited, problems where the "obvious" solution doesn't feel right, or situations requiring high-leverage insights.</p>
+          <p>Use this prompt when facing strategic decisions where conventional approaches feel limited, problems where the &quot;obvious&quot; solution doesn&apos;t feel right, or situations requiring high-leverage insights.</p>
         </div>
       </div>
 
@@ -29,19 +29,19 @@ export default function AristotlePage() {
 
 **Instructions:** When I describe any challenge, problem, decision, or situation, execute this exact analytical sequence:
 
-* **PHASE 1: ASSUMPTION AUTOPSY:** Identify every assumption embedded in how I framed the problem. List each one explicitly. Most people don't realize 80% of their 'problem' is inherited assumptions they never questioned. Flag which assumptions are borrowed from convention, competitors, industry norms, or fear.
+* **PHASE 1: ASSUMPTION AUTOPSY:** Identify every assumption embedded in how I framed the problem. List each one explicitly. Most people don&apos;t realize 80% of their &apos;problem&apos; is inherited assumptions they never questioned. Flag which assumptions are borrowed from convention, competitors, industry norms, or fear.
 
-* **PHASE 2: IRREDUCIBLE TRUTHS:** Strip the situation down to only what is verifiably, undeniably true. Not what's 'generally accepted'. Not what competitors do. Not what worked before. Only what remains when every assumption is removed. Present them as a numbered list of foundational truths.
+* **PHASE 2: IRREDUCIBLE TRUTHS:** Strip the situation down to only what is verifiably, undeniably true. Not what&apos;s &apos;generally accepted&apos;. Not what competitors do. Not what worked before. Only what remains when every assumption is removed. Present them as a numbered list of foundational truths.
 
-* **PHASE 3: RECONSTRUCTION FROM ZERO:** Using ONLY the irreducible truths from Phase 2, rebuild the solution as if no prior approach existed. Ask: "If we were solving this for the first time with no knowledge of how anyone else has done it, what would we build?" Generate 3 distinct reconstructed approaches, each starting purely from first principles.
+* **PHASE 3: RECONSTRUCTION FROM ZERO:** Using ONLY the irreducible truths from Phase 2, rebuild the solution as if no prior approach existed. Ask: &quot;If we were solving this for the first time with no knowledge of how anyone else has done it, what would we build?&quot; Generate 3 distinct reconstructed approaches, each starting purely from first principles.
 
 * **PHASE 4: ASSUMPTION VS. TRUTH MAP:** Create a clear comparison: on one side, the assumptions I started with. On the other side, the first principles that replaced them. Show exactly where conventional thinking was leading me astray and where the new foundation leads.
 
-* **PHASE 5: THE ARISTOTELIAN MOVE:** Identify the single highest-leverage action that emerges from first principles thinking. This is the move that conventional analysis would never surface because it requires abandoning assumptions that 'everyone knows are true'. Present it as a clear, specific, immediately executable recommendation.
+* **PHASE 5: THE ARISTOTELIAN MOVE:** Identify the single highest-leverage action that emerges from first principles thinking. This is the move that conventional analysis would never surface because it requires abandoning assumptions that &apos;everyone knows are true&apos;. Present it as a clear, specific, immediately executable recommendation.
 
 **Tone:** Write in direct, clear language. No filler. No hedging. Think like a philosopher who charges $5,000/hr for clarity.
 
-**Trigger:** Start by asking: "What problem, decision, or situation do you want me to deconstruct to its foundation?"</pre>
+**Trigger:** Start by asking: &quot;What problem, decision, or situation do you want me to deconstruct to its foundation?&quot;</pre>
         </div>
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-xs text-blue-700"><span className="font-semibold">Usage:</span> Paste this prompt and describe your problem or decision. The framework guides you through all 5 phases.</p>

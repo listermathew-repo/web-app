@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { dbOps } from '@/lib/db';
 import { sendAlert } from '@/lib/alerts';
-import { validateTrade, validateTradeWithRules, logValidation, formatValidationReport } from '@/lib/trade-validator';
+import { validateTradeWithRules, logValidation, formatValidationReport } from '@/lib/trade-validator';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { createRequestContext, logWithContext, formatContextForResponse } from '@/lib/request-context';
 import { randomUUID } from 'crypto';
@@ -159,7 +159,7 @@ export async function GET() {
 
 // POST /api/alerts - Receive trade alerts from TradingView
 export async function POST(request: NextRequest) {
-  let ctx = createRequestContext(); // Track this request
+  const ctx = createRequestContext(); // Track this request
 
   try {
     // 1. Authenticate with X-API-Key header
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
     try {
       const allTrades = dbOps.getPendingTrades();
       const recent = allTrades.filter(
-        (t: any) =>
+        (t: { symbol: string; direction: string; created_at: string }) =>
           t.symbol === alert.symbol &&
           t.direction === alert.direction &&
           new Date(t.created_at).getTime() > Date.now() - 30000 // within 30 seconds
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
 
     // 6. VALIDATE TRADE against 10-point entry checklist
     const tradeId = randomUUID();
-    let validationResult: any;
+    let validationResult: Record<string, unknown>;
     ctx.tradeId = tradeId;
     ctx.symbol = alert.symbol;
     ctx.direction = alert.direction;

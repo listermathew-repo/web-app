@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
 
 interface PendingTrade {
@@ -21,11 +21,25 @@ export default function PendingTradesWidget() {
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<Record<string, number>>({});
 
+  const fetchPendingTrades = useCallback(async () => {
+    try {
+      const response = await fetch("/api/pending", {
+        headers: { "X-API-Key": process.env.NEXT_PUBLIC_WEBHOOK_API_KEY || "" },
+      });
+      const data = await response.json();
+      setTrades(data.trades || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to fetch pending trades:", error);
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchPendingTrades();
     const interval = setInterval(fetchPendingTrades, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPendingTrades]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -42,20 +56,6 @@ export default function PendingTradesWidget() {
     }, 1000);
     return () => clearInterval(timer);
   }, [trades]);
-
-  const fetchPendingTrades = async () => {
-    try {
-      const response = await fetch("/api/pending", {
-        headers: { "X-API-Key": process.env.NEXT_PUBLIC_WEBHOOK_API_KEY || "" },
-      });
-      const data = await response.json();
-      setTrades(data.trades || []);
-      setLoading(false);
-    } catch (error) {
-      console.error("Failed to fetch pending trades:", error);
-      setLoading(false);
-    }
-  };
 
   const handleApprove = async (tradeId: string) => {
     setApproving(tradeId);

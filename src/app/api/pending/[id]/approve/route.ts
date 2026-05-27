@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCapitalClient } from '@/lib/capital-client';
 import { dbOps } from '@/lib/db';
 import { sendMultiChannelAlert } from '@/lib/alerts-redundancy';
-import { isTradingPaused, getPauseStatus } from '@/lib/trading-pause';
+import { isTradingPaused } from '@/lib/trading-pause';
 import { randomUUID } from 'crypto';
 
 export async function POST(
@@ -165,7 +165,6 @@ export async function POST(
     dbOps.logAlert(pendingTrade.symbol, 'execution', pendingTrade.entry_level);
 
     // 9. Send success alert
-    const successMessage = `✅ EXECUTED: ${pendingTrade.symbol} ${pendingTrade.direction.toUpperCase()} @ ${pendingTrade.entry_level.toFixed(4)} | Deal: ${orderResult.dealReference}`;
     await sendMultiChannelAlert({
       symbol: pendingTrade.symbol,
       level: 'ok',

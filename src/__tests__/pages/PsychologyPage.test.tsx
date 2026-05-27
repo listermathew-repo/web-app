@@ -198,7 +198,7 @@ describe('PsychologyPage Component', () => {
 
   it('displays all mental models', () => {
     render(<PsychologyPage />);
-    expect(screen.getByText('The trade either exists or it doesn't')).toBeInTheDocument();
+    expect(screen.getByText("The trade either exists or it doesn't")).toBeInTheDocument();
     expect(screen.getByText('Outcome vs process')).toBeInTheDocument();
     expect(screen.getByText('The 2-loss rule is your firewall')).toBeInTheDocument();
   });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isTradingPaused, getPauseStatus } from '@/lib/trading-pause';
+import { getPauseStatus } from '@/lib/trading-pause';
 
 /**
  * GET /api/trading-pause

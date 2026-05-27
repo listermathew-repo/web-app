@@ -68,7 +68,7 @@ export async function GET() {
     const startTime = Date.now();
     const checkTime = new Date().toISOString();
 
-    const results: Record<string, any> = {};
+    const results: Record<string, unknown> = {};
     const triggeredAlerts: string[] = [];
     const warningAlerts: string[] = [];
 

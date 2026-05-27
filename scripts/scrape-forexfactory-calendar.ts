@@ -10,8 +10,6 @@
 
 import dotenv from 'dotenv';
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' });
@@ -82,7 +80,7 @@ async function scrapeWithScraperAPI(date: string): Promise<CalendarEvent[]> {
  * More powerful than ScraperAPI, better for heavy sites
  * Register at: https://brightdata.com/
  */
-async function scrapeWithBrightData(date: string): Promise<CalendarEvent[]> {
+async function scrapeWithBrightData(_date: string): Promise<CalendarEvent[]> {
   const BRIGHT_DATA_KEY = process.env.BRIGHT_DATA_KEY || '';
 
   if (!BRIGHT_DATA_KEY) {
@@ -114,13 +112,13 @@ async function scrapeWithBrightData(date: string): Promise<CalendarEvent[]> {
  * Option 3: Alternative calendar source (Yahoo Finance / Investing.com API)
  * No Cloudflare protection - direct API access
  */
-async function scrapeFromInvestingCom(date: string): Promise<CalendarEvent[]> {
+async function scrapeFromInvestingCom(_date: string): Promise<CalendarEvent[]> {
   try {
     // Investing.com API (free, no auth required)
     const response = await axios.get('https://api.investing.com/api/financialdata/calendar/');
     console.log('✅ Investing.com calendar data received');
     return response.data || [];
-  } catch (error) {
+  } catch {
     // Fallback: Try TradingEconomics API
     console.warn('⚠️ Investing.com unavailable, trying TradingEconomics...');
     try {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { dbOps } from '@/lib/db';
 
 interface Position {
@@ -49,7 +49,7 @@ interface MonitorData {
  * - Confluence score distribution from detected setups
  * - Hourly analysis of setups by ADL hour
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const now = new Date();
     const timestamp = now.toISOString();
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     // Get open positions from database
     const dbPositions = dbOps.getOpenPositions();
-    const positions: Position[] = dbPositions.map((pos: any) => ({
+    const positions: Position[] = dbPositions.map((pos: Record<string, unknown>) => ({
       symbol: pos.symbol,
       entry_price: pos.entry_price,
       current_price: pos.current_price || pos.entry_price, // Fallback: would be updated by Capital.com sync
@@ -85,18 +85,18 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate trade metrics
-    const executedTrades = todayTrades.filter((t: any) => t.status === 'executed' || t.status === 'filled');
-    const winners = executedTrades.filter((t: any) => (t.pnl || 0) > 0);
-    const losers = executedTrades.filter((t: any) => (t.pnl || 0) <= 0);
+    const executedTrades = todayTrades.filter((t: Record<string, unknown>) => t.status === 'executed' || t.status === 'filled');
+    const winners = executedTrades.filter((t: Record<string, unknown>) => (t.pnl as number || 0) > 0);
+    const losers = executedTrades.filter((t: Record<string, unknown>) => (t.pnl as number || 0) <= 0);
     const win_rate = executedTrades.length > 0 ? winners.length / executedTrades.length : 0;
 
     // Calculate average entry time (in minutes from first setup detection to execution)
     const avgEntryTime = executedTrades.length > 0
-      ? executedTrades.reduce((sum: number, t: any) => {
+      ? executedTrades.reduce((sum: number, t: Record<string, unknown>) => {
           // Assumes created_at is setup detection time, executed_at is execution time
           if (t.created_at && t.executed_at) {
-            const created = new Date(t.created_at).getTime();
-            const executed = new Date(t.executed_at).getTime();
+            const created = new Date(t.created_at as string).getTime();
+            const executed = new Date(t.executed_at as string).getTime();
             return sum + (executed - created) / (1000 * 60); // Convert to minutes
           }
           return sum;
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       : 0;
 
     // Total P&L for today
-    const total_pnl = executedTrades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0);
+    const total_pnl = executedTrades.reduce((sum: number, t: Record<string, unknown>) => sum + ((t.pnl as number) || 0), 0);
 
     // Expected daily target: $1,240/day for AUDUSD strategy (trades 9-4 ADL window)
     // Based on backtest: 10 setups × 56% win rate × $280 avg profit = ~$1,568/month ÷ 20 = $78/setup
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
           const scoreKey = Math.min(95, score);
           confluenceScores[scoreKey] = (confluenceScores[scoreKey] || 0) + 1;
         }
-      } catch (err) {
+      } catch {
         // Validation log not found or error parsing
       }
     }
@@ -187,7 +187,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error('[MONITOR] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch monitor data';
 
     const response: MonitorData = {
       status: 'error',

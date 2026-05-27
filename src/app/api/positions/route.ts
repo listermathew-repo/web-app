@@ -3,7 +3,7 @@
  * GET: Fetch all open positions from Capital.com with current P&L
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { alertCapitalComError } from '@/lib/alerts';
 
 interface OpenPosition {
@@ -65,7 +65,7 @@ function getMockPositions(): OpenPosition[] {
  * GET /api/positions
  * Retrieve all open positions with live P&L
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // TODO: Replace with real Capital.com API call
     // For now, return mock data

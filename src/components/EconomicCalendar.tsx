@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TrendingUp, AlertTriangle, Clock } from "lucide-react";
 
 interface EconomicEvent {
@@ -31,26 +31,13 @@ export default function EconomicCalendar() {
   const [loading, setLoading] = useState(true);
   const [tradingPausedUntil, setTradingPausedUntil] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchEconomicEvents();
-    const interval = setInterval(fetchEconomicEvents, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    checkTradesPaused();
-    const interval = setInterval(checkTradesPaused, 10000); // Check every 10 seconds
-    return () => clearInterval(interval);
-  }, [events]);
-
-  const fetchEconomicEvents = async () => {
+  const fetchEconomicEvents = useCallback(async () => {
     try {
       // For now, use mock data. In production, integrate with:
       // - ForexFactory API
       // - Investing.com calendar
       // - TradingEconomics API
       const now = new Date();
-      const nextDay = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       // Mock high-impact events for today and tomorrow
       const mockEvents: EconomicEvent[] = [
@@ -98,9 +85,9 @@ export default function EconomicCalendar() {
       console.error("Failed to fetch economic calendar:", error);
       setLoading(false);
     }
-  };
+  }, []);
 
-  const checkTradesPaused = () => {
+  const computeTradesPausedStatus = useCallback((): string | null => {
     const now = new Date();
     const pauseWindowMinutes = 15;
 
@@ -113,15 +100,26 @@ export default function EconomicCalendar() {
 
         // Pause if within 15 min before or 15 min after
         if (minutesDiff > -pauseWindowMinutes && minutesDiff < pauseWindowMinutes) {
-          const paused = `Trading paused for ${event.event}`;
-          setTradingPausedUntil(paused);
-          return;
+          return `Trading paused for ${event.event}`;
         }
       }
     }
 
-    setTradingPausedUntil(null);
-  };
+    return null;
+  }, [events]);
+
+  useEffect(() => {
+    fetchEconomicEvents();
+    const interval = setInterval(fetchEconomicEvents, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [fetchEconomicEvents]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTradingPausedUntil(computeTradesPausedStatus());
+    }, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [computeTradesPausedStatus]);
 
   const getTimeUntil = (eventTime: string) => {
     const now = new Date();

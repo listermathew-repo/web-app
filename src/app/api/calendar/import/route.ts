@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and normalize events
-    const normalizedEvents: CalendarEvent[] = events.map((evt: any) => ({
+    const normalizedEvents: CalendarEvent[] = events.map((evt: Record<string, unknown>) => ({
       date,
       time: evt.time || evt.timeADL || '',
       timezone: evt.timezone || evt.currency || 'USD',

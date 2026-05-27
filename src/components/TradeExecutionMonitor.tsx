@@ -70,13 +70,10 @@ export default function TradeExecutionMonitor() {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch and auto-refresh
   useEffect(() => {
     fetchMonitorData();
-  }, [fetchMonitorData]);
 
-  // Auto-refresh every 30 seconds during trading hours
-  useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {

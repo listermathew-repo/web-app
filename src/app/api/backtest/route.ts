@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store in database
-    const result = dbOps.insertBacktestResult({
+    dbOps.insertBacktestResult({
       month,
       instrument,
       trades,

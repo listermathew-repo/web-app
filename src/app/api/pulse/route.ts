@@ -6,7 +6,7 @@
  * Called every 15 minutes during 09:00-22:00 ADL window
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getPulsePointEngine } from '@/lib/pulse-point-engine';
 import { sendAlert } from '@/lib/alerts';
 
@@ -30,7 +30,7 @@ interface PulseResponse {
   error?: string;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const startTime = Date.now();
 
   try {

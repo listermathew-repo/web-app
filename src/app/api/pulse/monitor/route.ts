@@ -6,7 +6,7 @@
  * Call this endpoint every 1-2 minutes (via cron or frontend interval)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAdvancedPulseEngine } from '@/lib/advanced-pulse-engine';
 import { sendAlert } from '@/lib/alerts';
 
@@ -38,7 +38,7 @@ interface StageMonitorResponse {
   error?: string;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const startTime = Date.now();
 
   try {

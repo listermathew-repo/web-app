@@ -5,21 +5,18 @@
  * Usage: npx ts-node scripts/e2e-workflow-test.ts
  */
 
-import { randomUUID } from 'crypto';
-import http from 'http';
-
 const API_KEY = process.env.WEBHOOK_API_KEY || 'e3acbaedddbf49184b9a3c34e3d1c99b';
 const BASE_URL = process.env.API_URL || 'http://localhost:3000';
 const WIKI_PASSWORD = process.env.WIKI_PASSWORD || 'Sanos2026';
 
 // Global cookie jar to maintain auth state across requests
-let cookies: string[] = [];
+const cookies: string[] = [];
 
 interface TestResult {
   step: string;
   status: 'PASS' | 'FAIL';
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 const results: TestResult[] = [];
@@ -30,7 +27,7 @@ function logStep(step: string) {
   console.log(`${'='.repeat(70)}`);
 }
 
-function logResult(step: string, status: 'PASS' | 'FAIL', message: string, details?: any) {
+function logResult(step: string, status: 'PASS' | 'FAIL', message: string, details?: Record<string, unknown>) {
   const result: TestResult = { step, status, message, details };
   results.push(result);
 
@@ -238,7 +235,7 @@ async function testBacktestExport() {
 
   try {
     console.log(`📊 Exporting backtest data...`);
-    const headers: any = {};
+    const headers: Record<string, string> = {};
     const cookieHeader = buildCookieHeader();
     if (cookieHeader) {
       headers['Cookie'] = cookieHeader.replace('Cookie: ', '');

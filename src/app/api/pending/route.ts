@@ -30,7 +30,7 @@ interface PendingTrade {
  * GET /api/pending
  * List all pending trades waiting for approval
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get pending trades from SQLite database
     const trades = dbOps.getPendingTrades() as PendingTrade[];
