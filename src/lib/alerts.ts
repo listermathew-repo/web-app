@@ -129,3 +129,13 @@ export async function alertSystemHealthIssue(component: string, status: string):
     tags: ['health', 'monitoring'],
   });
 }
+
+// Legacy function name for backward compatibility
+export async function sendStopLossAlert(symbol: string, currentPrice: number, stopPrice: number): Promise<void> {
+  await sendAlert({
+    type: 'error',
+    message: `🚨 STOP LOSS HIT - ${symbol} @ ${currentPrice} (Stop: ${stopPrice})`,
+    details: { symbol, currentPrice, stopPrice },
+    tags: ['stop_loss', 'critical'],
+  });
+}

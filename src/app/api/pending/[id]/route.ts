@@ -69,9 +69,9 @@ function ensureFiles(): void {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const tradeId = params.id;
+  const { id: tradeId } = await params;
 
   try {
     ensureFiles();
@@ -166,9 +166,9 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const tradeId = params.id;
+  const { id: tradeId } = await params;
 
   try {
     ensureFiles();
