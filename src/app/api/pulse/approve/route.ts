@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
     const progressMsg = progressMap[setup.stage] || 'Unknown stage';
 
     // Send confirmation alert
-    await sendAlert(
-      'success',
-      `✅ SETUP APPROVED - ${setup.symbol} ${setup.direction.toUpperCase()}
+    await sendAlert({
+      type: 'success',
+      message: `✅ SETUP APPROVED - ${setup.symbol} ${setup.direction.toUpperCase()}
 
 User approved to begin stage progression.
 
@@ -95,8 +95,9 @@ STAGES AHEAD:
 Entry valid for: 15 minutes from 5M confirmation
 Risk: $${setup.riskAmount} | Reward: $${setup.rewardAmount}
 ${notes ? `\nNotes: ${notes}` : ''}
-    `
-    );
+    `,
+      tags: ['setup', 'approved']
+    });
 
     return NextResponse.json<ApprovalResponse>(
       {
@@ -113,7 +114,7 @@ ${notes ? `\nNotes: ${notes}` : ''}
     console.error('[APPROVE] Error:', error);
 
     const errorMsg = error instanceof Error ? error.message : String(error);
-    await sendAlert('error', `🔴 APPROVAL ERROR: ${errorMsg}`);
+    await sendAlert({ type: 'error', message: `🔴 APPROVAL ERROR: ${errorMsg}`, tags: ['approval', 'error'] });
 
     return NextResponse.json<ApprovalResponse>(
       {

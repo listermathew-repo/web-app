@@ -39,13 +39,17 @@ export async function sendAlert({
     }
 
     // Send to ntfy.sh
+    const headers: Record<string, string> = {
+      'Title': title,
+      'Priority': priority,
+    };
+    if (tags.length > 0) {
+      headers['Tags'] = tags.join(',');
+    }
+
     await fetch(`https://ntfy.sh/${ntfyTopic}`, {
       method: 'POST',
-      headers: {
-        'Title': title,
-        'Priority': priority,
-        'Tags': tags.length > 0 ? tags.join(',') : undefined,
-      },
+      headers,
       body: fullMessage,
     });
   } catch (error) {
@@ -131,11 +135,19 @@ export async function alertSystemHealthIssue(component: string, status: string):
 }
 
 // Legacy function name for backward compatibility
-export async function sendStopLossAlert(symbol: string, currentPrice: number, stopPrice: number): Promise<void> {
+export async function sendStopLossAlert(
+  symbol: string,
+  currentPrice: number,
+  stopPrice: number,
+  level?: 'triggered' | 'warning' | 'critical'
+): Promise<void> {
+  const alertType = level === 'triggered' ? 'error' : level === 'warning' ? 'warning' : 'error';
+  const prefix = level === 'triggered' ? '🚨 STOP LOSS HIT' : level === 'warning' ? '⚠️ STOP LOSS WARNING' : '🚨 CRITICAL STOP LOSS';
+
   await sendAlert({
-    type: 'error',
-    message: `🚨 STOP LOSS HIT - ${symbol} @ ${currentPrice} (Stop: ${stopPrice})`,
+    type: alertType,
+    message: `${prefix} - ${symbol} @ ${currentPrice} (Stop: ${stopPrice})`,
     details: { symbol, currentPrice, stopPrice },
-    tags: ['stop_loss', 'critical'],
+    tags: ['stop_loss', level === 'triggered' ? 'critical' : 'warning'],
   });
 }

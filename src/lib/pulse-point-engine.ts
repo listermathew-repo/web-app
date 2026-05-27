@@ -13,7 +13,7 @@
  * Win Rate: 56-61% based on 3-month backtest
  */
 
-import { sendAlert, sendTradeAlert } from './alerts';
+import { sendAlert } from './alerts';
 import { dbOps } from './db';
 
 // Constants
@@ -145,7 +145,7 @@ class PulsePointEngine {
       return setups;
     } catch (error) {
       console.error(`[PULSE] Error analyzing ${symbol}:`, error);
-      await sendAlert('error', `🔴 PULSE POINT ERROR - ${symbol}: ${error}`);
+      await sendAlert({ type: 'error', message: `🔴 PULSE POINT ERROR - ${symbol}: ${error}`, tags: ['pulse_point', 'error'] });
       return [];
     }
   }
@@ -405,7 +405,7 @@ class PulsePointEngine {
 Risk: $${setup.riskAmount} | Reward: $${setup.rewardAmount} | R:R: ${setup.rRatio}:1
     `;
 
-    await sendAlert('info', alert);
+    await sendAlert({ type: 'success', message: alert, tags: ['pulse_point', 'setup_detected'] });
     console.log(`[ALERT] Setup detected: ${setup.id}`);
   }
 

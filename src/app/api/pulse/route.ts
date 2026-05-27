@@ -104,7 +104,7 @@ Total to review: ${totalSetups}
 Expected monthly: 55-99 setups
 Expected P&L: $46,900 - $91,350 at $350 risk
       `;
-      await sendAlert('info', summary);
+      await sendAlert({ type: 'success', message: summary, tags: ['pulse', 'summary'] });
     }
 
     const duration = Date.now() - startTime;
@@ -145,7 +145,7 @@ Expected P&L: $46,900 - $91,350 at $350 risk
     console.error('[PULSE API] Error:', error);
 
     const errorMsg = error instanceof Error ? error.message : String(error);
-    await sendAlert('error', `🔴 PULSE POINT API ERROR: ${errorMsg}`);
+    await sendAlert({ type: 'error', message: `🔴 PULSE POINT API ERROR: ${errorMsg}`, tags: ['pulse', 'error'] });
 
     return NextResponse.json<PulseResponse>(
       {

@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
     console.error('[MONITOR] Error:', error);
 
     const errorMsg = error instanceof Error ? error.message : String(error);
-    await sendAlert('error', `🔴 STAGE MONITOR ERROR: ${errorMsg}`);
+    await sendAlert({ type: 'error', message: `🔴 STAGE MONITOR ERROR: ${errorMsg}`, tags: ['stage_monitor', 'error'] });
 
     return NextResponse.json<StageMonitorResponse>(
       {
